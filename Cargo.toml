@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.38.1", features = ["full"] }
 tokio-macros = { version = "2.3.0" }
+axum = { version = "0.7.5" }
+serde_json = "1.0.120"
 
 # Tracing and logging systems
 tracing = { version = "0.1" }
