@@ -1,0 +1,12 @@
+[package]
+name = "parkinsons_pulse_service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.38.1", features = ["full"] }
+tokio-macros = { version = "2.3.0" }
+
+# Tracing and logging systems
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3" }

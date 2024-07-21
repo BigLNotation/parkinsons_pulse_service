@@ -1,2 +1,2 @@
-# parkinsons_pulse_service
-backend service for parkinsons pulse
+# Parkinson's Pulse Service
+The Backend service for parkinson's pulse
