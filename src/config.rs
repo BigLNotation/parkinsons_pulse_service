@@ -21,13 +21,23 @@ pub fn get_api_port() -> u16 {
     });
 
     // Checks to see if port given is in range
-    if !(1..=65535).contains(&port_int) {
+    if !(1024..=65535).contains(&port_int) {
         tracing::error!(PORT = port_int, "Set port is not a valid port");
         panic!("Set port is not a valid port");
     };
 
     tracing::info!(PORT = port_int, "Retried api port");
     port_int
+}
+
+#[test]
+fn returns_valid_port() {
+    let port = get_api_port();
+
+    assert!(
+        (1024..65535).contains(&port),
+        "Given port is not invalid range"
+    );
 }
 
 /// Gets API address
