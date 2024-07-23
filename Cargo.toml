@@ -3,12 +3,22 @@ name = "parkinsons_pulse_service"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["local_log"]
+local_log = []
+jaeger_tracing = []
+
 [dependencies]
 tokio = { version = "1.38.1", features = ["full"] }
 tokio-macros = { version = "2.3.0" }
 axum = { version = "0.7.5" }
+tower-http = { version = "0.5.0", features = ["trace"] }
 serde_json = "1.0.120"
 
 # Tracing and logging systems
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
+
+opentelemetry = "0.17.0"
+tracing-opentelemetry = "0.17.2"
+opentelemetry-jaeger = "0.16.0"
