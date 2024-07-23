@@ -41,6 +41,12 @@ pub async fn run() {
 #[tracing::instrument]
 async fn hello_world() -> impl IntoResponse {
     tracing::info!("Hello world!");
+    foo();
 
     (StatusCode::OK, Json(json!({"message": "Hello World!"})))
+}
+
+#[tracing::instrument]
+fn foo() {
+    tracing::warn!("foo!");
 }

@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-enable_tracing = []
+default = ["local_log"]
+local_log = []
+jaeger_tracing = []
 
 [dependencies]
 tokio = { version = "1.38.1", features = ["full"] }
