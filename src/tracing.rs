@@ -4,13 +4,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 /// Initializes tracing and logging for service
 ///
 /// # Features
-/// local_log: local fmt logging, enabled by default \
-/// jaeger_tracing: This feature flag enabled jaeger tracing
+/// `local_log`: local fmt logging, enabled by default \
+/// `jaeger_tracing`: This feature flag enabled jaeger tracing
 ///
 /// # Panics
 /// This function panics upon failing to create and or init tracing.
 ///
-pub fn init_tracing() {
+pub fn init() {
     let mut layers = Vec::new();
 
     if cfg!(feature = "jaeger_tracing") {
