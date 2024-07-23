@@ -4,10 +4,10 @@ const DEFAULT_APT_PORT: u16 = 4444;
 
 /// Get set api port
 ///
-/// Returns port set by env "API_PORT". If it is unable to retrieve
+/// Returns port set by env `API_PORT`. If it is unable to retrieve
 ///
 /// # Panics
-/// This function panics if the DEFAULT_APT_PORT is not a valid port.
+/// This function panics if the `DEFAULT_APT_PORT` is not a valid port.
 pub fn get_api_port() -> u16 {
     let port = std::env::var("API_PORT").unwrap_or_else(|e| {
         tracing::warn!(DEFAULT_APT_PORT, error = %e,
@@ -42,12 +42,12 @@ fn returns_valid_port() {
 
 /// Gets API address
 ///
-/// Gets the address that the api router should be bound to. This sets the address to INADDR_ANY.
+/// Gets the address that the api router should be bound to. This sets the address to `INADDR_ANY`.
 /// This is meant for IPv4 api endpoints.
 ///
 /// # Panics
 /// Can panic from:
-/// - get_api_port
+/// - `get_api_port`
 pub fn get_api_addr() -> SocketAddr {
     let api_port = get_api_port();
 

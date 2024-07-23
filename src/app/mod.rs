@@ -61,7 +61,7 @@ pub async fn run() {
     };
 
     match axum::serve(listener, app).await {
-        Ok(_) => tracing::warn!("Axum stop serving app"),
+        Ok(()) => tracing::warn!("Axum stop serving app"),
         Err(e) => {
             tracing::error!(error = %e, "Axum failed to serve app");
             panic!("Axum failed to serve app");
