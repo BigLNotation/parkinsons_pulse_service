@@ -1,0 +1,4 @@
+### Get the health of the service
+GET http://localhost:4444/health
+
+###

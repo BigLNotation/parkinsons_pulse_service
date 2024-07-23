@@ -1,3 +1,5 @@
+mod health;
+
 use std::time::Duration;
 
 use axum::http::StatusCode;
@@ -18,6 +20,7 @@ pub async fn run() {
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/fail", get(failure))
+        .route("/health", get(health::health_check))
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
