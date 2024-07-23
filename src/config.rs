@@ -21,7 +21,7 @@ pub fn get_api_port() -> u16 {
     });
 
     // Checks to see if port given is in range
-    if !(1..=65535).contains(&port_int) {
+    if !(1024..=65535).contains(&port_int) {
         tracing::error!(PORT = port_int, "Set port is not a valid port");
         panic!("Set port is not a valid port");
     };
@@ -30,9 +30,20 @@ pub fn get_api_port() -> u16 {
     port_int
 }
 
+#[test]
+fn returns_valid_port() {
+    let port = get_api_port();
+
+    assert!(
+        (1024..65535).contains(&port),
+        "Given port is not invalid range"
+    );
+}
+
 /// Gets API address
 ///
 /// Gets the address that the api router should be bound to. This sets the address to INADDR_ANY.
+/// This is meant for IPv4 api endpoints.
 ///
 /// # Panics
 /// Can panic from:
@@ -41,4 +52,13 @@ pub fn get_api_addr() -> SocketAddr {
     let api_port = get_api_port();
 
     SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), api_port)
+}
+
+#[test]
+fn returns_valid_api_endpoint() {
+    let addr = get_api_addr();
+
+    assert!(addr.is_ipv4());
+
+    assert!(addr.ip().is_unspecified() || addr.ip().is_loopback());
 }
