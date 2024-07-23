@@ -1,8 +1,11 @@
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::{routing::get, Json, Router};
+use std::time::Duration;
 
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
 use serde_json::json;
+use tower_http::classify::ServerErrorsFailureClass;
+use tower_http::trace::TraceLayer;
 
 /// Runs app
 ///
@@ -12,7 +15,35 @@ use serde_json::json;
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-    let app = Router::new().route("/", get(hello_world));
+    let app = Router::new()
+        .route("/", get(hello_world))
+        .route("/fail", get(failure))
+        .layer(
+            TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+                let matched_path = request
+                    .extensions()
+                    .get::<MatchedPath>()
+                    .map(MatchedPath::as_str);
+
+                tracing::debug_span!("http_request",
+                    method = ?request.method(),
+                    matched_path,
+                )
+            })
+            .on_request(|request: &Request<_>, _span: &tracing::Span| {
+                tracing::debug!(header = ?request.headers(), body = ?request.body());
+            })
+            .on_response(
+                |response: &Response, latency: Duration, _span: &tracing::Span| {
+                        tracing::debug!(response = ?response.headers(), body = ?response.body(), latency = ?latency);
+                },
+            )
+            .on_failure(
+                |error: ServerErrorsFailureClass, latency: Duration, _span: &tracing::Span| {
+                    tracing::error!(error = ?error, latency = ?latency, "Request returned a failure");
+                },
+            ),
+    );
     tracing::info!("Created app router");
 
     let api_addr = crate::config::get_api_addr();
@@ -39,7 +70,16 @@ pub async fn run() {
 }
 
 #[tracing::instrument]
+async fn failure() -> impl IntoResponse {
+    // TODO: Remove example after first endpoint made
+    tracing::error!("I failed :(");
+
+    StatusCode::INTERNAL_SERVER_ERROR
+}
+
+#[tracing::instrument]
 async fn hello_world() -> impl IntoResponse {
+    // TODO: Remove example after first endpoint made
     tracing::info!("Hello world!");
     foo();
 
@@ -48,5 +88,6 @@ async fn hello_world() -> impl IntoResponse {
 
 #[tracing::instrument]
 fn foo() {
+    // TODO: Remove example after first endpoint made
     tracing::warn!("foo!");
 }

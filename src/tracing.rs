@@ -2,7 +2,7 @@ use opentelemetry::global;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
 /// Initializes tracing and logging for service
-/// 
+///
 /// # Features
 /// local_log: local fmt logging, enabled by default \
 /// jaeger_tracing: This feature flag enabled jaeger tracing
@@ -29,8 +29,7 @@ pub fn init_tracing() {
     }
 
     if cfg!(feature = "local_log") {
-        let stdout_layer = tracing_subscriber::fmt::Layer::default()
-            .boxed();
+        let stdout_layer = tracing_subscriber::fmt::Layer::default().boxed();
 
         layers.push(stdout_layer);
     }
@@ -39,10 +38,10 @@ pub fn init_tracing() {
         .with(layers)
         .try_init()
         .expect("Could not init tracing registry");
-    
+
     #[cfg(feature = "jaeger_tracing")]
     tracing::info!("Jaeger tracing enabled");
-    
+
     #[cfg(feature = "local_log")]
     tracing::info!("Local logging fmt enabled");
 }
