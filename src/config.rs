@@ -43,6 +43,7 @@ fn returns_valid_port() {
 /// Gets API address
 ///
 /// Gets the address that the api router should be bound to. This sets the address to INADDR_ANY.
+/// This is meant for IPv4 api endpoints.
 ///
 /// # Panics
 /// Can panic from:
@@ -51,4 +52,13 @@ pub fn get_api_addr() -> SocketAddr {
     let api_port = get_api_port();
 
     SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), api_port)
+}
+
+#[test]
+fn returns_valid_api_endpoint() {
+    let addr = get_api_addr();
+
+    assert!(addr.is_ipv4());
+
+    assert!(addr.ip().is_unspecified() || addr.ip().is_loopback());
 }
