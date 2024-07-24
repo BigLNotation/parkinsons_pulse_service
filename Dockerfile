@@ -8,6 +8,10 @@ RUN cargo build --release
 RUN mv ./target/release/parkinsons_pulse_service ./app
 
 FROM ubuntu:latest AS runtime
+# Install needed packages
+RUN apt-get update && apt-get install -y \
+curl
+
 WORKDIR /app
 
 COPY ./util/healthcheck.sh .
