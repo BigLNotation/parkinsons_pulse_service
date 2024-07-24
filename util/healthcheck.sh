@@ -7,4 +7,4 @@ else
   PORT=$API_PORT
 fi
 
-curl -f http://localhost:$PORT/health
+curl -f http://localhost:"$PORT"/health

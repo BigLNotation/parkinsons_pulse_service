@@ -34,6 +34,10 @@ pub fn init() {
         layers.push(stdout_layer);
     }
 
+    if let Ok(journal_layer) = tracing_journald::Layer::new() {
+        layers.push(journal_layer.boxed());
+    }
+
     tracing_subscriber::registry()
         .with(layers)
         .try_init()
