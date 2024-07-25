@@ -17,17 +17,17 @@ use tower_http::trace::TraceLayer;
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-  let app_state = match AppState::new().await {
-    Ok(value) => {
-      tracing::info!("Connected to database");
-      value
-    }
-    Err(e) => {
-      tracing::error!(error = %e, "Failed to connect to database");
-      panic!("Failed to connect to database");
-    }
-  };
-  let app = Router::new()
+    let app_state = match AppState::new().await {
+        Ok(value) => {
+            tracing::info!("Connected to database");
+            value
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to connect to database");
+            panic!("Failed to connect to database");
+        }
+    };
+    let app = Router::new()
         .route("/", get(hello_world))
         .route("/fail", get(failure))
         .with_state(app_state)
@@ -57,50 +57,50 @@ pub async fn run() {
                 },
             ),
     );
-  tracing::info!("Created app router");
+    tracing::info!("Created app router");
 
-  let api_addr = crate::config::get_api_addr();
-  tracing::info!(%api_addr, "Binding to address");
+    let api_addr = crate::config::get_api_addr();
+    tracing::info!(%api_addr, "Binding to address");
 
-  let listener = match tokio::net::TcpListener::bind(api_addr).await {
-    Ok(listener) => {
-      tracing::info!("Bound to port successfully");
-      listener
-    }
-    Err(e) => {
-      tracing::error!(error = %e, "Failed to bind to tcp listener");
-      panic!("Failed to bind to tcp listener");
-    }
-  };
+    let listener = match tokio::net::TcpListener::bind(api_addr).await {
+        Ok(listener) => {
+            tracing::info!("Bound to port successfully");
+            listener
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to bind to tcp listener");
+            panic!("Failed to bind to tcp listener");
+        }
+    };
 
-  match axum::serve(listener, app).await {
-    Ok(()) => tracing::warn!("Axum stop serving app"),
-    Err(e) => {
-      tracing::error!(error = %e, "Axum failed to serve app");
-      panic!("Axum failed to serve app");
-    }
-  };
+    match axum::serve(listener, app).await {
+        Ok(()) => tracing::warn!("Axum stop serving app"),
+        Err(e) => {
+            tracing::error!(error = %e, "Axum failed to serve app");
+            panic!("Axum failed to serve app");
+        }
+    };
 }
 
 #[tracing::instrument]
 async fn failure() -> impl IntoResponse {
-  // TODO: Remove example after first endpoint made
-  tracing::error!("I failed :(");
+    // TODO: Remove example after first endpoint made
+    tracing::error!("I failed :(");
 
-  StatusCode::INTERNAL_SERVER_ERROR
+    StatusCode::INTERNAL_SERVER_ERROR
 }
 
 #[tracing::instrument]
 async fn hello_world() -> impl IntoResponse {
-  // TODO: Remove example after first endpoint made
-  tracing::info!("Hello world!");
-  foo();
+    // TODO: Remove example after first endpoint made
+    tracing::info!("Hello world!");
+    foo();
 
-  (StatusCode::OK, Json(json!({"message": "Hello World!"})))
+    (StatusCode::OK, Json(json!({"message": "Hello World!"})))
 }
 
 #[tracing::instrument]
 fn foo() {
-  // TODO: Remove example after first endpoint made
-  tracing::warn!("foo!");
+    // TODO: Remove example after first endpoint made
+    tracing::warn!("foo!");
 }
