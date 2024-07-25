@@ -37,16 +37,11 @@ impl State {
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-    let app_state = match State::new().await {
-        Ok(value) => {
-            tracing::info!("Connected to database");
-            value
-        }
-        Err(e) => {
-            tracing::error!(error = %e, "Failed to connect to database");
-            panic!("Failed to connect to database");
-        }
-    };
+    let app_state = State::new().await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Failed to connect to database");
+        panic!("Failed to connect to database");
+    });
+    tracing::info!("Connected to database");
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/fail", get(failure))
