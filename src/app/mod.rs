@@ -94,7 +94,7 @@ pub async fn run() {
         tracing::error!(error = %e, "Axum failed to serve app");
         panic!("Axum failed to serve app");
     });
-    tracing::warn!("Axum stop serving app")
+    tracing::warn!("Axum stop serving app");
 }
 
 #[tracing::instrument]
