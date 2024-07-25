@@ -10,21 +10,21 @@ use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct State {
     pub db: Arc<Database>,
 }
 
-impl AppState {
+impl State {
     /// # Errors
     ///
-    /// Will return 'Err' if there is no DATABASE_URL environment variable or the app
+    /// Will return 'Err' if there is no `DATABASE_URL` environment variable or the app
     /// cannot connect to the database
     pub async fn new() -> anyhow::Result<Self> {
         dotenv().ok();
         let database_url = std::env::var("DATABASE_URL")?;
         let client = Client::with_uri_str(database_url).await?;
         let db = client.database("capstone");
-        Ok(AppState { db: Arc::new(db) })
+        Ok(State { db: Arc::new(db) })
     }
 }
 
@@ -36,7 +36,7 @@ impl AppState {
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-    let app_state = match AppState::new().await {
+    let app_state = match State::new().await {
         Ok(value) => {
             tracing::info!("Connected to database");
             value
