@@ -22,3 +22,6 @@ tracing-subscriber = { version = "0.3" }
 opentelemetry = "0.17.0"
 tracing-opentelemetry = "0.17.2"
 opentelemetry-jaeger = "0.16.0"
+mongodb = "3.0.1"
+dotenvy = "0.15.7"
+anyhow = "1.0.86"
