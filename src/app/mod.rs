@@ -1,19 +1,17 @@
-mod server_health;
-
+use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
-use dotenvy::dotenv;
 use mongodb::{Client, Database};
 use serde_json::json;
-use std::sync::Arc;
-use std::time::Duration;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
 
 use crate::config;
+
+mod server_health;
 
 #[derive(Clone)]
 pub struct State {
@@ -46,11 +44,12 @@ pub async fn run() {
         panic!("Failed to connect to database");
     });
     tracing::info!("Connected to database");
+
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/fail", get(failure))
-        .with_state(app_state)
         .route("/health", get(server_health::check))
+        .with_state(app_state)
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
@@ -79,27 +78,23 @@ pub async fn run() {
     );
     tracing::info!("Created app router");
 
-    let api_addr = crate::config::get_api_addr();
+    let api_addr = config::get_api_addr();
     tracing::info!(%api_addr, "Binding to address");
 
-    let listener = match tokio::net::TcpListener::bind(api_addr).await {
-        Ok(listener) => {
-            tracing::info!("Bound to port successfully");
-            listener
-        }
-        Err(e) => {
+    let listener = tokio::net::TcpListener::bind(api_addr)
+        .await
+        .unwrap_or_else(|e| {
+            // TODO!: add tracing to panic
             tracing::error!(error = %e, "Failed to bind to tcp listener");
             panic!("Failed to bind to tcp listener");
-        }
-    };
+        });
+    tracing::info!("Bound to port successfully");
 
-    match axum::serve(listener, app).await {
-        Ok(()) => tracing::warn!("Axum stop serving app"),
-        Err(e) => {
-            tracing::error!(error = %e, "Axum failed to serve app");
-            panic!("Axum failed to serve app");
-        }
-    };
+    axum::serve(listener, app).await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Axum failed to serve app");
+        panic!("Axum failed to serve app");
+    });
+    tracing::warn!("Axum stop serving app")
 }
 
 #[tracing::instrument]
