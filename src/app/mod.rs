@@ -1,13 +1,32 @@
-pub mod state;
-
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
+use dotenvy::dotenv;
+use mongodb::{Client, Database};
 use serde_json::json;
-use state::AppState;
+use std::sync::Arc;
 use std::time::Duration;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
+
+#[derive(Clone)]
+pub struct AppState {
+    pub db: Arc<Database>,
+}
+
+impl AppState {
+    /// # Errors
+    ///
+    /// Will return 'Err' if there is no DATABASE_URL environment variable or the app
+    /// cannot connect to the database
+    pub async fn new() -> anyhow::Result<Self> {
+        dotenv().ok();
+        let database_url = std::env::var("DATABASE_URL")?;
+        let client = Client::with_uri_str(database_url).await?;
+        let db = client.database("capstone");
+        Ok(AppState { db: Arc::new(db) })
+    }
+}
 
 /// Runs app
 ///
