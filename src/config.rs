@@ -1,6 +1,17 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 const DEFAULT_APT_PORT: u16 = 4444;
+const DEFAULT_DATABASE_URL: &str = "mongodb://localhost:27107";
+
+/// Get set database url
+pub fn get_database_url() -> String {
+    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|e| {
+        tracing::warn!(DEFAULT_DATABASE_URL, error = %e,
+                "Unable to retrieve API_PORT; falling back to default port");
+        DEFAULT_DATABASE_URL.to_string()
+    });
+    database_url
+}
 
 /// Get set api port
 ///

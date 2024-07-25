@@ -9,6 +9,8 @@ use std::time::Duration;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
 
+use crate::config;
+
 #[derive(Clone)]
 pub struct State {
     pub db: Arc<Database>,
@@ -20,8 +22,7 @@ impl State {
     /// Will return 'Err' if there is no `DATABASE_URL` environment variable or the app
     /// cannot connect to the database
     pub async fn new() -> anyhow::Result<Self> {
-        dotenv().ok();
-        let database_url = std::env::var("DATABASE_URL")?;
+        let database_url = config::get_database_url();
         let client = Client::with_uri_str(database_url).await?;
         let db = client.database("capstone");
         Ok(State { db: Arc::new(db) })
