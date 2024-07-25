@@ -5,9 +5,33 @@ use std::time::Duration;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
+use dotenvy::dotenv;
+use mongodb::{Client, Database};
 use serde_json::json;
+use std::sync::Arc;
+use std::time::Duration;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
+
+use crate::config;
+
+#[derive(Clone)]
+pub struct State {
+    pub db: Arc<Database>,
+}
+
+impl State {
+    /// # Errors
+    ///
+    /// Will return 'Err' if there is no `DATABASE_URL` environment variable or the app
+    /// cannot connect to the database
+    pub async fn new() -> anyhow::Result<Self> {
+        let database_url = config::get_database_url();
+        let client = Client::with_uri_str(database_url).await?;
+        let db = client.database("capstone");
+        Ok(State { db: Arc::new(db) })
+    }
+}
 
 /// Runs app
 ///
@@ -17,9 +41,15 @@ use tower_http::trace::TraceLayer;
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
+    let app_state = State::new().await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Failed to connect to database");
+        panic!("Failed to connect to database");
+    });
+    tracing::info!("Connected to database");
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/fail", get(failure))
+        .with_state(app_state)
         .route("/health", get(server_health::check))
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
