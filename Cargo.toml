@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["local_log"]
+default = ["local_log", "journal_log"]
 local_log = []
+journal_log = []
 jaeger_tracing = []
 
 [dependencies]

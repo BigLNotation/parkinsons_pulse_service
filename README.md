@@ -1,6 +1,10 @@
 # Parkinson's Pulse Service
 The Backend service for parkinson's pulse
 
+# Configurations
+## ENV
+- `API_PORT`, Specs the port that this app will serve on.
+
 # Tracing
 ## Jaeger
 This service allows for local use of jaeger for tracing. 

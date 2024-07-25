@@ -1,4 +1,4 @@
-mod health;
+mod server_health;
 
 use std::time::Duration;
 
@@ -20,7 +20,7 @@ pub async fn run() {
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/fail", get(failure))
-        .route("/health", get(health::check))
+        .route("/health", get(server_health::check))
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
