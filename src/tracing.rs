@@ -1,3 +1,4 @@
+#[cfg(feature = "jaeger_tracing")]
 use opentelemetry::global;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
@@ -13,7 +14,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 pub fn init() {
     let mut layers = Vec::new();
 
-    if cfg!(feature = "jaeger_tracing") {
+    #[cfg(feature = "jaeger_tracing")]
+    {
         global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
 
         let jaeger_tracer = opentelemetry_jaeger::new_pipeline()
@@ -28,10 +30,16 @@ pub fn init() {
         layers.push(jaeger_layer);
     }
 
-    if cfg!(feature = "local_log") {
+    #[cfg(feature = "local_log")]
+    {
         let stdout_layer = tracing_subscriber::fmt::Layer::default().boxed();
 
         layers.push(stdout_layer);
+    }
+
+    #[cfg(feature = "journal_log")]
+    if let Ok(journal_layer) = tracing_journald::Layer::new() {
+        layers.push(journal_layer.boxed());
     }
 
     tracing_subscriber::registry()
