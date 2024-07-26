@@ -63,18 +63,14 @@ pub async fn run() {
                 )
             })
             .on_request(|request: &Request<_>, _span: &tracing::Span| {
-                tracing::debug!(header = ?request.headers(), body = ?request.body());
+                    tracing::debug!(header = ?request.headers(), body = ?request.body());
             })
-            .on_response(
-                |response: &Response, latency: Duration, _span: &tracing::Span| {
-                        tracing::debug!(response = ?response.headers(), body = ?response.body(), latency = ?latency);
-                },
-            )
-            .on_failure(
-                |error: ServerErrorsFailureClass, latency: Duration, _span: &tracing::Span| {
+            .on_response(|response: &Response, latency: Duration, _span: &tracing::Span| {
+                    tracing::debug!(response = ?response.headers(), body = ?response.body(), latency = ?latency);
+            })
+            .on_failure(|error: ServerErrorsFailureClass, latency: Duration, _span: &tracing::Span| {
                     tracing::error!(error = ?error, latency = ?latency, "Request returned a failure");
-                },
-            ),
+            })
     );
     tracing::info!("Created app router");
 
