@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 const DEFAULT_APT_PORT: u16 = 4444;
-const DEFAULT_DATABASE_URL: &str = "mongodb://localhost:27107";
+const DEFAULT_DATABASE_URL: &str = "mongodb://localhost:27017";
 
 /// Get set database url
 pub fn get_database_url() -> String {

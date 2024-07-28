@@ -1,10 +1,15 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
-use mongodb::{Client, Database};
+use axum::{
+    extract::{MatchedPath, Path, State},
+    http::Request,
+    routing::get,
+    Json, Router,
+};
+use mongodb::{bson::doc, Client, Database};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
@@ -13,12 +18,12 @@ use crate::config;
 
 mod server_health;
 
-#[derive(Clone)]
-pub struct State {
-    pub db: Arc<Database>,
+#[derive(Clone, Debug)]
+pub struct SharedState {
+    pub db: Database,
 }
 
-impl State {
+impl SharedState {
     /// # Errors
     ///
     /// Will return 'Err' if there is no `DATABASE_URL` environment variable or the app
@@ -27,7 +32,32 @@ impl State {
         let database_url = config::get_database_url();
         let client = Client::with_uri_str(database_url).await?;
         let db = client.database("capstone");
-        Ok(State { db: Arc::new(db) })
+        db.run_command(doc! { "ping": 1 }).await?; // Ping DB to make sure we can connect
+        Ok(SharedState { db })
+    }
+}
+
+/// Wraps `anyhow::Error` so that we can use `?` in handler functions
+///
+/// See: <https://github.com/tokio-rs/axum/blob/304cbee7c9efd489e53a3bb9ce4860eebe1915ba/examples/anyhow-error-response/src/main.rs>
+struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("An error occurred:\n{}", self.0),
+        )
+            .into_response()
+    }
+}
+
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
     }
 }
 
@@ -39,7 +69,7 @@ impl State {
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-    let app_state = State::new().await.unwrap_or_else(|e| {
+    let app_state = SharedState::new().await.unwrap_or_else(|e| {
         tracing::error!(error = %e, "Failed to connect to database");
         panic!("Failed to connect to database");
     });
@@ -47,6 +77,7 @@ pub async fn run() {
 
     let app = Router::new()
         .route("/", get(hello_world))
+        .route("/read/:id", get(read_example))
         .route("/fail", get(failure))
         .route("/health", get(server_health::check))
         .with_state(app_state)
@@ -114,4 +145,25 @@ async fn hello_world() -> impl IntoResponse {
 fn foo() {
     // TODO: Remove example after first endpoint made
     tracing::warn!("foo!");
+}
+
+#[derive(Serialize, Deserialize)]
+struct ExampleDocument {
+    _id: String,
+    string: String,
+    number: i32,
+}
+
+#[tracing::instrument]
+async fn read_example(
+    Path(id): Path<String>,
+    State(state): State<SharedState>,
+) -> Result<impl IntoResponse, AppError> {
+    // TODO: Remove example after first endpoint made
+    let document: Option<ExampleDocument> = state
+        .db
+        .collection("testCollection")
+        .find_one(doc! { "_id": id })
+        .await?;
+    Ok((StatusCode::OK, Json::from(document)))
 }
