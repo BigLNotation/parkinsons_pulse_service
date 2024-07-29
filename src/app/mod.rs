@@ -3,7 +3,7 @@ use std::time::Duration;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{
-    extract::{MatchedPath, Path, State},
+    extract::{FromRef, MatchedPath, Path, State},
     http::Request,
     routing::get,
     Json, Router,
@@ -18,46 +18,32 @@ use crate::config;
 
 mod server_health;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug)]
-pub struct SharedState {
+pub struct AppState {
     pub db: Database,
 }
 
-impl SharedState {
+impl AppState {
     /// # Errors
     ///
-    /// Will return 'Err' if there is no `DATABASE_URL` environment variable or the app
-    /// cannot connect to the database
+    /// Will return 'Err' if the app cannot connect to the database
     pub async fn new() -> anyhow::Result<Self> {
         let database_url = config::get_database_url();
         let client = Client::with_uri_str(database_url).await?;
         let db = client.database("capstone");
-        db.run_command(doc! { "ping": 1 }).await?; // Ping DB to make sure we can connect
-        Ok(SharedState { db })
+        // Ping DB to make sure we can connect
+        db.run_command(doc! { "ping": 1 })
+            .await
+            .inspect_err(|e| tracing::error!(error = %e, "Failed to connect to database"))?;
+        tracing::info!("Connected to database");
+        Ok(AppState { db })
     }
 }
 
-/// Wraps `anyhow::Error` so that we can use `?` in handler functions
-///
-/// See: <https://github.com/tokio-rs/axum/blob/304cbee7c9efd489e53a3bb9ce4860eebe1915ba/examples/anyhow-error-response/src/main.rs>
-struct AppError(anyhow::Error);
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("An error occurred:\n{}", self.0),
-        )
-            .into_response()
-    }
-}
-
-impl<E> From<E> for AppError
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(err: E) -> Self {
-        Self(err.into())
+impl FromRef<AppState> for Database {
+    fn from_ref(app_state: &AppState) -> Database {
+        app_state.db.clone()
     }
 }
 
@@ -69,11 +55,11 @@ where
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-    let app_state = SharedState::new().await.unwrap_or_else(|e| {
-        tracing::error!(error = %e, "Failed to connect to database");
-        panic!("Failed to connect to database");
+    let app_state = AppState::new().await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Error occurred while creating app state");
+        panic!("Error occurred while creating app state");
     });
-    tracing::info!("Connected to database");
+    tracing::info!("App state initialized");
 
     let app = Router::new()
         .route("/", get(hello_world))
@@ -155,15 +141,17 @@ struct ExampleDocument {
 }
 
 #[tracing::instrument]
-async fn read_example(
-    Path(id): Path<String>,
-    State(state): State<SharedState>,
-) -> Result<impl IntoResponse, AppError> {
+async fn read_example(Path(id): Path<String>, State(db): State<Database>) -> Response {
     // TODO: Remove example after first endpoint made
-    let document: Option<ExampleDocument> = state
-        .db
-        .collection("testCollection")
+    let document = db
+        .collection::<ExampleDocument>("testCollection")
         .find_one(doc! { "_id": id })
-        .await?;
-    Ok((StatusCode::OK, Json::from(document)))
+        .await;
+    match document {
+        Ok(document) => (StatusCode::OK, Json::from(document)).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
 }
