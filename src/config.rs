@@ -74,5 +74,5 @@ fn returns_valid_api_endpoint() {
 }
 
 pub fn get_metrics_addr() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 2222)
+    SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 2222)
 }
