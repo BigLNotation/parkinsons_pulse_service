@@ -72,3 +72,7 @@ fn returns_valid_api_endpoint() {
 
     assert!(addr.ip().is_unspecified() || addr.ip().is_loopback());
 }
+
+pub fn get_metrics_addr() -> SocketAddr {
+    SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 2222)
+}
