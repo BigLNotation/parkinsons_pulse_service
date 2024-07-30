@@ -17,6 +17,6 @@ WORKDIR /app
 COPY ./util/healthcheck.sh .
 COPY --from=build /app/app /usr/local/bin/
 
-HEALTHCHECK --start-period=10s --interval=5m --timeout=3s CMD ["bash", "./healthcheck.sh"]
+HEALTHCHECK --start-period=10s --interval=10s --timeout=3s CMD ["bash", "./healthcheck.sh"]
 
 ENTRYPOINT ["/usr/local/bin/app"]
