@@ -26,10 +26,12 @@ pub async fn run() {
     tracing::info!("Bound to address successfully");
 
     tracing::info!("Serving metrics");
-    axum::serve(metrics_listener, metrics_app).await.unwrap_or_else(|e| {
-        tracing::error!(error = %e, "Axum failed to serve metrics");
-        panic!("Axum failed to serve metrics");
-    });
+    axum::serve(metrics_listener, metrics_app)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!(error = %e, "Axum failed to serve metrics");
+            panic!("Axum failed to serve metrics");
+        });
     tracing::warn!("Axum stop serving metrics");
 }
 
