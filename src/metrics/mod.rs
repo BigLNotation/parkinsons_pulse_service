@@ -1,7 +1,6 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::serve::Serve;
 use axum::{Json, Router};
 use serde_json::json;
 use tokio::net::TcpListener;
@@ -14,7 +13,7 @@ pub mod logging;
 ///
 /// # Panics
 /// Panics if fails to serve endpoint
-pub async fn run() -> Serve<Router, Router> {
+pub async fn run() {
     let metrics_app = Router::new().route("/health", get(check_health));
 
     let metrics_addr = config::get_metrics_addr();
@@ -27,7 +26,11 @@ pub async fn run() -> Serve<Router, Router> {
     tracing::info!("Bound to address successfully");
 
     tracing::info!("Serving metrics");
-    axum::serve(metrics_listener, metrics_app)
+    axum::serve(metrics_listener, metrics_app).await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Axum failed to serve metrics");
+        panic!("Axum failed to serve metrics");
+    });
+    tracing::warn!("Axum stop serving metrics");
 }
 
 async fn check_health() -> impl IntoResponse {

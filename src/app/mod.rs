@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::serve::Serve;
 use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
 use mongodb::{Client, Database};
 use serde_json::json;
@@ -38,7 +37,7 @@ impl State {
 /// # Panics
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
-pub async fn run() -> Serve<Router, Router> {
+pub async fn run() {
     let app_state = State::new().await.unwrap_or_else(|e| {
         tracing::error!(error = %e, "Failed to connect to database");
         panic!("Failed to connect to database");
@@ -84,7 +83,11 @@ pub async fn run() -> Serve<Router, Router> {
     tracing::info!("Bound to address successfully");
 
     tracing::info!("Serving app");
-    axum::serve(listener, app)
+    axum::serve(listener, app).await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Axum failed to serve app");
+        panic!("Axum failed to serve app");
+    });
+    tracing::warn!("Axum stop serving app");
 }
 
 #[tracing::instrument]
