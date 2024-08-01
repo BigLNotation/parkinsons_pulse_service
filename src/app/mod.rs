@@ -136,7 +136,8 @@ fn foo() {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ExampleDocument {
-    _id: String,
+    #[serde(rename = "_id")]
+    id: String,
     string: String,
     number: i32,
 }
@@ -163,9 +164,14 @@ async fn write_example(
     Json(document): Json<ExampleDocument>,
 ) -> Response {
     // TODO: Remove example after first endpoint made
+    // For this example we don't distinguish adding a new document and overwriting an existing one, for simplicity
     let result = db
         .collection::<ExampleDocument>("testCollection")
-        .insert_one(document)
+        .update_one(
+            doc! { "_id": document.id },
+            doc! {"$set": doc!{"string": document.string, "number": document.number}},
+        )
+        .upsert(true)
         .await;
     match result {
         Ok(_) => StatusCode::OK.into_response(),
