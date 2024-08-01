@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{FromRef, MatchedPath, Path, State},
     http::Request,
-    routing::get,
+    routing::{get, put},
     Json, Router,
 };
 use mongodb::{bson::doc, Client, Database};
@@ -64,6 +64,7 @@ pub async fn run() {
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/read/:id", get(read_example))
+        .route("/write", put(write_example))
         .route("/fail", get(failure))
         .route("/health", get(server_health::check))
         .with_state(app_state)
@@ -133,7 +134,7 @@ fn foo() {
     tracing::warn!("foo!");
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct ExampleDocument {
     _id: String,
     string: String,
@@ -149,6 +150,25 @@ async fn read_example(Path(id): Path<String>, State(db): State<Database>) -> Res
         .await;
     match document {
         Ok(document) => (StatusCode::OK, Json::from(document)).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+#[tracing::instrument]
+async fn write_example(
+    State(db): State<Database>,
+    Json(document): Json<ExampleDocument>,
+) -> Response {
+    // TODO: Remove example after first endpoint made
+    let result = db
+        .collection::<ExampleDocument>("testCollection")
+        .insert_one(document)
+        .await;
+    match result {
+        Ok(_) => StatusCode::OK.into_response(),
         Err(e) => {
             tracing::error!(error = %e, "Error occurred while querying database");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
