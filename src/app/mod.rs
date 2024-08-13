@@ -11,12 +11,11 @@ use axum::{
 use mongodb::{bson::doc, Client, Database};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tokio::net::TcpListener;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
 
 use crate::config;
-
-mod server_health;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug)]
@@ -66,7 +65,6 @@ pub async fn run() {
         .route("/read/:id", get(read_example))
         .route("/write", put(write_example))
         .route("/fail", get(failure))
-        .route("/health", get(server_health::check))
         .with_state(app_state)
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
@@ -93,17 +91,16 @@ pub async fn run() {
     tracing::info!("Created app router");
 
     let api_addr = config::get_api_addr();
-    tracing::info!(%api_addr, "Binding to address");
+    tracing::info!(%api_addr, "Binding app to address");
 
-    let listener = tokio::net::TcpListener::bind(api_addr)
-        .await
-        .unwrap_or_else(|e| {
-            // TODO!: add tracing to panic
-            tracing::error!(error = %e, "Failed to bind to tcp listener");
-            panic!("Failed to bind to tcp listener");
-        });
-    tracing::info!("Bound to port successfully");
+    let listener = TcpListener::bind(api_addr).await.unwrap_or_else(|e| {
+        // TODO!: add tracing to panic
+        tracing::error!(error = %e, "Failed to bind to tcp listener");
+        panic!("Failed to bind to tcp listener");
+    });
+    tracing::info!("Bound to address successfully");
 
+    tracing::info!("Serving app");
     axum::serve(listener, app).await.unwrap_or_else(|e| {
         tracing::error!(error = %e, "Axum failed to serve app");
         panic!("Axum failed to serve app");

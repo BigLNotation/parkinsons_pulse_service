@@ -1,7 +1,10 @@
 #[tokio::main]
 async fn main() {
-    parkinsons_pulse_service::tracing::init();
+    parkinsons_pulse_service::metrics::logging::init();
     tracing::info!("Initialised tracing");
 
-    parkinsons_pulse_service::app::run().await;
+    let _ = tokio::join!(
+        parkinsons_pulse_service::app::run(),
+        parkinsons_pulse_service::metrics::run(),
+    );
 }

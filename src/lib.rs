@@ -4,4 +4,4 @@
 
 pub mod app;
 mod config;
-pub mod tracing;
+pub mod metrics;
