@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{
@@ -29,13 +30,16 @@ impl AppState {
     /// Will return 'Err' if the app cannot connect to the database
     pub async fn new() -> anyhow::Result<Self> {
         let database_url = config::get_database_url();
-        let client = Client::with_uri_str(database_url).await?;
+        let client = Client::with_uri_str(database_url.clone()).await?;
         let db = client.database("capstone");
         // Ping DB to make sure we can connect
         db.run_command(doc! { "ping": 1 })
             .await
-            .inspect_err(|e| tracing::error!(error = %e, "Failed to connect to database"))?;
-        tracing::info!("Connected to database");
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to connect to database at {database_url}"),
+            )
+            .with_context(|| format!("Failed to connect to database at {database_url}"))?;
+        tracing::info!("Connected to database at {database_url}");
         Ok(AppState { db })
     }
 }
@@ -134,13 +138,13 @@ fn foo() {
 #[derive(Serialize, Deserialize, Debug)]
 struct ExampleDocument {
     #[serde(rename = "_id")]
-    id: String,
+    id: u32, // For actual documents we'll use ObjectId, this is just to make manual testing of this example simpler
     string: String,
     number: i32,
 }
 
 #[tracing::instrument]
-async fn read_example(Path(id): Path<String>, State(db): State<Database>) -> Response {
+async fn read_example(Path(id): Path<u32>, State(db): State<Database>) -> Response {
     // TODO: Remove example after first endpoint made
     let document = db
         .collection::<ExampleDocument>("testCollection")
