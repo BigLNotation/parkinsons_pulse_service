@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use mongodb::bson::{oid::ObjectId, DateTime};
 use serde::{Deserialize, Serialize};
 
@@ -106,8 +104,8 @@ pub struct MultichoiceQuestionOption {
     id: ObjectId,
 }
 
-fn main() {
-    let form: Form = Form {
+fn _example() {
+    let _form: Form = Form {
         id: Some(ObjectId::new()),
         title: String::from("Tremors"),
         created_by: ObjectId::new(),
