@@ -13,7 +13,6 @@ pub struct User {
     is_patient: bool,
     caregivers: Vec<ObjectId>,
     form_templates: Vec<Form>,
-    form_filled: Vec<Form>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -67,21 +66,17 @@ pub enum QuestionAndAnswer {
     FreeForm(FreeFormQuestion, FreeFormAnswer),
 }
 
-// In the template, the answer will be set to the default
-// it is when the form is opened
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct FreeFormQuestion {
-    id: ObjectId,
+    _id: ObjectId,
     title: String,
     max_length: u64,
     min_length: u64,
 }
 
-// In the template, the answer will store the default value
-// for when the form is opened
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SliderQuestion {
-    id: ObjectId,
+    _id: ObjectId,
     title: String,
     units: Option<String>,
     low: f64,
@@ -91,7 +86,7 @@ pub struct SliderQuestion {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestion {
-    id: ObjectId,
+    _id: ObjectId,
     title: String,
     options: Vec<MultichoiceQuestionOption>,
     min_selected: u64,
@@ -101,7 +96,7 @@ pub struct MultichoiceQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestionOption {
     name: String,
-    id: ObjectId,
+    _id: ObjectId,
 }
 
 fn _example() {
@@ -112,17 +107,17 @@ fn _example() {
         created_at: DateTime::now(),
         questions: vec![
             Question::Multichoice(MultichoiceQuestion {
-                id: ObjectId::new(),
+                _id: ObjectId::new(),
                 title: String::from("How many times have you experienced this in the last week?"),
                 options: vec![MultichoiceQuestionOption {
                     name: String::from("Once"),
-                    id: ObjectId::new(),
+                    _id: ObjectId::new(),
                 }],
                 min_selected: 1,
                 max_selected: 2,
             }),
             Question::FreeForm(FreeFormQuestion {
-                id: ObjectId::new(),
+                _id: ObjectId::new(),
                 title: String::from("Is there anything else you would like to add?"),
                 max_length: 200,
                 min_length: 0,
@@ -132,13 +127,13 @@ fn _example() {
             Event::QuestionEdited(QuestionEdited {
                 question_id: ObjectId::new(),
                 former_question: Question::FreeForm(FreeFormQuestion {
-                    id: ObjectId::new(),
+                    _id: ObjectId::new(),
                     title: String::from("How are you feeling this week?"),
                     max_length: 100,
                     min_length: 10,
                 }),
                 new_question: Question::FreeForm(FreeFormQuestion {
-                    id: ObjectId::new(),
+                    _id: ObjectId::new(),
                     title: String::from("Is there anything else you would like to add?"),
                     max_length: 200,
                     min_length: 0,
@@ -150,13 +145,13 @@ fn _example() {
                 answers: vec![
                     QuestionAndAnswer::Multichoice(
                         MultichoiceQuestion {
-                            id: ObjectId::new(),
+                            _id: ObjectId::new(),
                             title: String::from(
                                 "How many times have you experienced this in the last week?",
                             ),
                             options: vec![MultichoiceQuestionOption {
                                 name: String::from("Once"),
-                                id: ObjectId::new(),
+                                _id: ObjectId::new(),
                             }],
                             min_selected: 1,
                             max_selected: 2,
@@ -165,7 +160,7 @@ fn _example() {
                     ),
                     QuestionAndAnswer::FreeForm(
                         FreeFormQuestion {
-                            id: ObjectId::new(),
+                            _id: ObjectId::new(),
                             title: String::from("Is there anything else you would like to add?"),
                             max_length: 200,
                             min_length: 0,
