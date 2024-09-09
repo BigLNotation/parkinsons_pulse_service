@@ -169,7 +169,8 @@ pub enum QuestionAndAnswer {
 /// Free form question with some validation rules you could apply
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct FreeFormQuestion {
-    pub _id: ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub title: String,
     pub max_length: u64,
     pub min_length: u64,
@@ -177,7 +178,8 @@ pub struct FreeFormQuestion {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SliderQuestion {
-    pub _id: ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: ObjectId,
     pub title: String,
     pub units: Option<String>,
     pub low: f64,
@@ -187,7 +189,8 @@ pub struct SliderQuestion {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestion {
-    pub _id: ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: ObjectId,
     pub title: String,
     pub options: Vec<MultichoiceQuestionOption>,
     pub min_selected: u64,
@@ -197,5 +200,6 @@ pub struct MultichoiceQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestionOption {
     pub name: String,
-    pub _id: ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: ObjectId,
 }
