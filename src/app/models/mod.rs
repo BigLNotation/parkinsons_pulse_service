@@ -30,17 +30,17 @@ pub struct User {
 ///     created_at: DateTime::now(),
 ///     questions: vec![
 ///         Question::Multichoice(MultichoiceQuestion {
-///             _id: ObjectId::new(),
+///             id: Some(ObjectId::new()),
 ///             title: String::from("How many times have you experienced this in the last week?"),
 ///             options: vec![MultichoiceQuestionOption {
 ///                 name: String::from("Once"),
-///                 _id: ObjectId::new(),
+///                 id: ObjectId::new(),
 ///             }],
 ///             min_selected: 1,
 ///             max_selected: 2,
 ///         }),
 ///         Question::FreeForm(FreeFormQuestion {
-///             _id: ObjectId::new(),
+///             id: Some(ObjectId::new()),
 ///             title: String::from("Is there anything else you would like to add?"),
 ///             max_length: 200,
 ///             min_length: 0,
@@ -50,13 +50,13 @@ pub struct User {
 ///         Event::QuestionEdited(QuestionEdited {
 ///             question_id: ObjectId::new(),
 ///             former_question: Question::FreeForm(FreeFormQuestion {
-///                 _id: ObjectId::new(),
+///                 id: Some(ObjectId::new()),
 ///                 title: String::from("How are you feeling this week?"),
 ///                 max_length: 100,
 ///                 min_length: 10,
 ///             }),
 ///             new_question: Question::FreeForm(FreeFormQuestion {
-///                 _id: ObjectId::new(),
+///                 id: Some(ObjectId::new()),
 ///                 title: String::from("Is there anything else you would like to add?"),
 ///                 max_length: 200,
 ///                 min_length: 0,
@@ -68,13 +68,13 @@ pub struct User {
 ///             answers: vec![
 ///                 QuestionAndAnswer::Multichoice(
 ///                     MultichoiceQuestion {
-///                         _id: ObjectId::new(),
+///                         id: Some(ObjectId::new()),
 ///                         title: String::from(
 ///                             "How many times have you experienced this in the last week?",
 ///                         ),
 ///                         options: vec![MultichoiceQuestionOption {
 ///                             name: String::from("Once"),
-///                             _id: ObjectId::new(),
+///                             id: ObjectId::new(),
 ///                         }],
 ///                         min_selected: 1,
 ///                         max_selected: 2,
@@ -83,7 +83,7 @@ pub struct User {
 ///                 ),
 ///                 QuestionAndAnswer::FreeForm(
 ///                     FreeFormQuestion {
-///                         _id: ObjectId::new(),
+///                         id: Some(ObjectId::new()),
 ///                         title: String::from("Is there anything else you would like to add?"),
 ///                         max_length: 200,
 ///                         min_length: 0,
@@ -179,7 +179,7 @@ pub struct FreeFormQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SliderQuestion {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: ObjectId,
+    pub id: Option<ObjectId>,
     pub title: String,
     pub units: Option<String>,
     pub low: f64,
@@ -190,7 +190,7 @@ pub struct SliderQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestion {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: ObjectId,
+    pub id: Option<ObjectId>,
     pub title: String,
     pub options: Vec<MultichoiceQuestionOption>,
     pub min_selected: u64,
@@ -200,6 +200,6 @@ pub struct MultichoiceQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestionOption {
     pub name: String,
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "_id")]
     pub id: ObjectId,
 }
