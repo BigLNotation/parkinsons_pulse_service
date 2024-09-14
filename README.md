@@ -1,6 +1,20 @@
 # Parkinson's Pulse Service
 The Backend service for parkinson's pulse
 
+# Run locally
+For front end to run this locally you can do the following steps
+```bash
+git clone https://github.com/BigLNotation/parkinsons_pulse_service.git
+cd parkinsons_pulse_service
+docker compose up -d
+docker run -d -p 4444:4444 .
+```
+or something along these lines, you are smart you can do it :)
+
+### Notes:
+This will not have any data in it unless you spec out a volume for the container. 
+To access the server the has now been started the url will be `localhost:4444/`. 
+
 # Configurations
 ## ENV
 - `API_PORT`, Specs the port that this app will serve on.
