@@ -1,3 +1,8 @@
+import {
+  to = aws_ecr_repository.pp_service_repo
+  id = "biglnotation_pp_service_repo"
+}
+
 resource "aws_ecr_repository" "pp_service_repo" {
   name                 = "biglnotation_pp_service_repo"
   image_tag_mutability = "MUTABLE"

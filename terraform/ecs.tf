@@ -15,8 +15,9 @@ resource "aws_ecs_service" "pp_service_service" {
 
   network_configuration {
     assign_public_ip = true
-#     security_groups = [aws_security_group.sg.id]
-    subnets = [aws_subnet.sn1_public.id, aws_subnet.sn2_public.id]
+    security_groups = [aws_security_group.public_sg.id]
+    subnets = [aws_subnet.sn1_public.id, aws_subnet.sn2_public.id,
+               aws_subnet.sn1_private.id, aws_subnet.sn2_private.id]
   }
 }
 
@@ -24,14 +25,14 @@ resource "aws_ecs_task_definition" "pp_service_td" {
   container_definitions = jsonencode([
     {
       name         = "app"
-      image        = "hashicorp/http-echo:latest"
+      image        = "${aws_ecr_repository.pp_service_repo.repository_url}:latest"
       cpu          = 256
       memory       = 512
       essential    = true
       portMappings = [
         {
-          containerPort = 5678
-          hostPort      = 5678
+          containerPort = 4444
+          hostPort      = 4444
         }
       ]
     }

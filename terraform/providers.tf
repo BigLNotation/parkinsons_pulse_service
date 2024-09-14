@@ -8,7 +8,7 @@ terraform {
 
   backend "s3" {
     bucket         = "biglnotation-bucket-tfstate"
-    key            = "terraform.tfstate"
+    key            = "pp_service.tfstate"
     region         = "ap-southeast-2"
     dynamodb_table = "biglnotation-terraform-state"
   }
