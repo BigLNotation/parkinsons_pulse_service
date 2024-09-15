@@ -13,7 +13,7 @@ jaeger_tracing = []
 tokio = { version = "1.38.1", features = ["full"] }
 tokio-macros = { version = "2.3.0" }
 axum = { version = "0.7.5" }
-tower-http = { version = "0.5.0", features = ["trace"] }
+tower-http = { version = "0.5.0", features = ["trace", "cors"] }
 serde_json = "1.0.120"
 
 # Tracing and logging systems
@@ -21,9 +21,19 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
 tracing-journald = { version = "0.3" }
 
-opentelemetry = "0.17.0"
-tracing-opentelemetry = "0.17.2"
-opentelemetry-jaeger = "0.16.0"
+opentelemetry = "0.25.0"
+tracing-opentelemetry = "0.26.0"
+opentelemetry-jaeger = "0.22.0"
 mongodb = "3.0.1"
 dotenvy = "0.15.7"
 anyhow = "1.0.86"
+
+axum-extra = { version = "0.9.3", features = ["typed-header"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+futures = "0.3.30"
+serde = { version = "1.0.202", features = ["derive"] }
+tokio-tungstenite = "0.24.0"
+rand = "0.8.5"
+rust-argon2 = "2.1.0"
+tower-cookies = "0.10.0"
+jsonwebtoken = "9.3.0"
