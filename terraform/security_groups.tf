@@ -33,3 +33,16 @@ resource "aws_security_group" "public_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+resource "aws_security_group" "user_db_sg" {
+  name = "biglnotation_user_db_sg"
+  vpc_id = aws_vpc.vpc.id
+
+  ingress {
+    description = "mongo db port"
+    from_port = 27017
+    to_port = 27017
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

@@ -33,6 +33,10 @@ resource "aws_ecs_task_definition" "pp_service_td" {
         {
           containerPort = 4444
           hostPort      = 4444
+        },
+        {
+          containerPort = 27017
+          hostPort      = 27017
         }
       ]
     }

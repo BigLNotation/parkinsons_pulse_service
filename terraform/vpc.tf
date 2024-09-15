@@ -4,6 +4,10 @@ resource "aws_vpc" "vpc" {
 
   enable_dns_support   = true
   enable_dns_hostnames = true
+
+  tags = {
+    Name = "biglnotation_main_vpc"
+  }
 }
 
 resource "aws_subnet" "sn1_public" {
