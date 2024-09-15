@@ -1,6 +1,5 @@
 pub mod models;
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -12,6 +11,9 @@ use axum::{
     routing::{get, put},
     Json, Router,
 };
+use models::{Form, Question, QuestionAndAnswer, User};
+use mongodb::bson::oid::ObjectId;
+use mongodb::bson::{to_document, DateTime};
 use mongodb::{bson::doc, Client, Database};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -71,6 +73,10 @@ pub async fn run() {
         .route("/", get(hello_world))
         .route("/read/:id", get(read_example))
         .route("/write", put(write_example))
+        .route("/get_user/:id", get(get_user))
+        .route("/create_user", put(create_user))
+        .route("/create_form", put(create_form))
+        .route("/push_form_answers", put(push_form_answers))
         .route("/fail", get(failure))
         .with_state(app_state)
         .layer(
@@ -179,6 +185,164 @@ async fn write_example(
         .await;
     match result {
         Ok(_) => StatusCode::OK.into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+#[tracing::instrument]
+async fn get_user(Path(id): Path<ObjectId>, State(db): State<Database>) -> Response {
+    let document = db
+        .collection::<User>("users")
+        .find_one(doc! { "_id": id })
+        .await;
+    match document {
+        Ok(document) => (StatusCode::OK, Json::from(document)).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct CreateUserPayload {
+    first_name: String,
+    last_name: String,
+    national_health_identifer: String,
+    email_address: String,
+    password: String,
+    is_patient: bool,
+}
+
+#[tracing::instrument]
+async fn create_user(
+    State(db): State<Database>,
+    Json(payload): Json<CreateUserPayload>,
+) -> Response {
+    let user = User {
+        id: None,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+        national_health_identifer: payload.national_health_identifer,
+        email_address: payload.email_address,
+        // TODO!!!!!!: password hashing (not that passwords are used at all currently)
+        hashed_password: payload.password,
+        is_patient: payload.is_patient,
+        caregivers: Vec::new(),
+        form_templates: Vec::new(),
+    };
+    let result = db.collection::<User>("users").insert_one(user).await;
+    match result {
+        Ok(result) => (
+            StatusCode::OK,
+            Json(json! ({ "created_id": result.inserted_id })),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct CreateFormPayload {
+    // TODO!: get user id from request header instead once we can do that - don't let people mess with each other's forms
+    user_id: ObjectId,
+    title: String,
+    pub questions: Vec<Question>,
+}
+
+#[tracing::instrument]
+async fn create_form(
+    State(db): State<Database>,
+    Json(payload): Json<CreateFormPayload>,
+) -> Response {
+    let id = ObjectId::new();
+    let form = Form {
+        id: Some(id),
+        title: payload.title,
+        created_by: payload.user_id,
+        created_at: DateTime::now(),
+        questions: payload.questions,
+        events: Vec::new(),
+    };
+    let form_document = match to_document(&form) {
+        Ok(doc) => doc,
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to convert Form to BSON document");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
+    let result = db
+        .collection::<User>("users")
+        .update_one(
+            doc! { "_id": payload.user_id },
+            doc! { "$push": { "form_templates": form_document } },
+        )
+        .await;
+    match result {
+        Ok(result) => {
+            if result.modified_count == 0 {
+                // TODO this shouldn't be relevant for this endpoint once user ID comes from auth header instead
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+            (StatusCode::OK, Json(json! ({ "created_id": id }))).into_response()
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct FormAnswersPayload {
+    // TODO!: get user id from request header instead once we can do that - don't let people mess with each other's forms
+    user_id: ObjectId,
+    form_id: ObjectId,
+    answers: Vec<QuestionAndAnswer>,
+}
+
+// TODO!: input validation wrt. string length, etc
+#[tracing::instrument]
+async fn push_form_answers(
+    State(db): State<Database>,
+    Json(payload): Json<FormAnswersPayload>,
+) -> Response {
+    let answers_document = match payload
+        .answers
+        .iter()
+        .map(to_document)
+        .collect::<Result<Vec<_>, _>>()
+    {
+        Ok(doc) => doc,
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to convert form answers to BSON document");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
+    let result = db
+        .collection::<User>("users")
+        .update_one(
+            doc! { "_id": payload.user_id, "form_templates._id": payload.form_id },
+            doc! { "$push": { "form_templates.$.events": { "FormSubmitted": {
+                "answers": answers_document,
+                "submitted_by": payload.user_id,
+                "submitted_at": DateTime::now()
+            }} } },
+        )
+        .await;
+    match result {
+        Ok(result) => {
+            if result.modified_count == 0 {
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+            StatusCode::OK.into_response()
+        }
         Err(e) => {
             tracing::error!(error = %e, "Error occurred while querying database");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()

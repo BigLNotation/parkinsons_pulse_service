@@ -1,0 +1,10 @@
+@hostname=localhost
+@port=4444
+@address=http://{{hostname}}:{{port}}
+
+### Get a user by ID.
+# Returns a `User`, or `null` if there is no user with the given ID
+#
+# @prompt id The ID of the user to get
+
+GET {{address}}/get_user/{{id}}

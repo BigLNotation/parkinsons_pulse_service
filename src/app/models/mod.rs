@@ -4,15 +4,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    id: Option<ObjectId>,
-    first_name: String,
-    last_name: String,
-    national_health_identifer: String,
-    email_address: String,
-    hashed_password: String,
-    is_patient: bool,
-    caregivers: Vec<ObjectId>,
-    form_templates: Vec<Form>,
+    pub id: Option<ObjectId>,
+    pub first_name: String,
+    pub last_name: String,
+    pub national_health_identifer: String,
+    pub email_address: String,
+    pub hashed_password: String,
+    pub is_patient: bool,
+    pub caregivers: Vec<ObjectId>,
+    pub form_templates: Vec<Form>,
 }
 
 /// A form that clients fill in is represented here
