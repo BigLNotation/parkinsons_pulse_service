@@ -142,8 +142,24 @@ impl Form {
         id: ObjectId,
         title: String,
         created_by: ObjectId,
-        questions: Vec<Question>,
+        mut questions: Vec<Question>,
     ) -> Self {
+        for question in &mut questions {
+            match question {
+                Question::Multichoice(ref mut question) => {
+                    question.id = Some(ObjectId::new());
+                    for option in &mut question.options {
+                        option.id = ObjectId::new();
+                    }
+                }
+                Question::Slider(ref mut question) => {
+                    question.id = Some(ObjectId::new());
+                }
+                Question::FreeForm(ref mut question) => {
+                    question.id = Some(ObjectId::new());
+                }
+            }
+        }
         Self {
             id: Some(id),
             title,
@@ -205,9 +221,9 @@ pub type FreeFormAnswer = String;
 /// Combination of both the question and answer
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum QuestionAndAnswer {
-    Multichoice(MultichoiceQuestion, MultichoiceAnswer),
-    Slider(SliderQuestion, SliderAnswer),
-    FreeForm(FreeFormQuestion, FreeFormAnswer),
+    Multichoice(ObjectId, MultichoiceAnswer),
+    Slider(ObjectId, SliderAnswer),
+    FreeForm(ObjectId, FreeFormAnswer),
 }
 
 /// Free form question with some validation rules you could apply

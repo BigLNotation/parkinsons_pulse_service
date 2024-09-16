@@ -5,10 +5,13 @@
 ### Push a user's answers for a form.
 # Returns HTTP status code only.
 #
-# This endpoint takes an array of question-answer pairs; three such pairs are hardcoded here as an example.
+# This endpoint takes an array of question-answer pairs; this example request answers exactly one question.
 #
 # @prompt user_id the ObjectId of the user - TODO once auth is implemented this will be based on the auth header instead
 # @prompt form_id the ObjectId of the form to push answers for
+# @prompt question_type Multichoice, Slider, or FreeForm
+# @prompt question_id The ObjectId of the question being answered
+# @prompt answer The answer to the question - of type ObjectId, f64, or String. Include quotes for non-f64 types when running this request manually.
 
 PUT {{address}}/form/push_answers
 Content-Type: application/json
@@ -17,26 +20,6 @@ Content-Type: application/json
 	"user_id": "{{user_id}}",
 	"form_id": "{{form_id}}",
 	"answers": [
-		{"Multichoice": [{
-			"title": "Example multichoice question",
-			"options": [
-				{"name": "option_1", "_id": "66e55724bf93cb620f0a0d01"},
-				{"name": "option_2", "_id": "66e55724bf93cb620f0a0d02"}
-			],
-			"min_selected": 1,
-			"max_selected": 1
-		}, "66e55724bf93cb620f0a0d01"]},
-		{"Slider": [{
-			"title": "Example slider question",
-			"units": "kWh",
-			"low": 0,
-			"high": 10000,
-			"step": 100
-		}, 300]},
-		{"FreeForm": [{
-			"title": "Example freeform question",
-			"min_length": 0,
-			"max_length": 1000
-		}, "Hello world"]}
+		{"{{question_type}}": ["{{question_id}}", {{answer}}]}
 	]
 }
