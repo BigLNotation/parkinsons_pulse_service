@@ -1,3 +1,5 @@
+pub mod dto;
+
 use mongodb::bson::{oid::ObjectId, DateTime};
 use serde::{Deserialize, Serialize};
 

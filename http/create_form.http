@@ -10,7 +10,7 @@
 # @prompt user_id the ObjectId of the user - TODO once auth is implemented this will be based on the auth header instead
 # @prompt title the title of the form
 
-PUT {{address}}/create_form
+PUT {{address}}/form/create
 Content-Type: application/json
 
 {

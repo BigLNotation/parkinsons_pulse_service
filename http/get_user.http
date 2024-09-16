@@ -7,4 +7,4 @@
 #
 # @prompt id The ID of the user to get
 
-GET {{address}}/get_user/{{id}}
+GET {{address}}/user/get/{{id}}

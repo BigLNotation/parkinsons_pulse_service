@@ -12,7 +12,7 @@
 # @prompt password The user's password
 # @prompt is_patient Whether the user is a patient (if true) or caregiver (if false)
 
-PUT {{address}}/create_user
+PUT {{address}}/user/create
 Content-Type: application/json
 
 {

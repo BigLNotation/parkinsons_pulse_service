@@ -10,7 +10,7 @@
 # @prompt user_id the ObjectId of the user - TODO once auth is implemented this will be based on the auth header instead
 # @prompt form_id the ObjectId of the form to push answers for
 
-PUT {{address}}/push_form_answers
+PUT {{address}}/form/push_answers
 Content-Type: application/json
 
 {
