@@ -149,7 +149,7 @@ impl Form {
                 Question::Multichoice(ref mut question) => {
                     question.id = Some(ObjectId::new());
                     for option in &mut question.options {
-                        option.id = ObjectId::new();
+                        option.id = Some(ObjectId::new());
                     }
                 }
                 Question::Slider(ref mut question) => {
@@ -260,6 +260,6 @@ pub struct MultichoiceQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestionOption {
     pub name: String,
-    #[serde(rename = "_id")]
-    pub id: ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
 }
