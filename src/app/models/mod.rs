@@ -60,7 +60,7 @@ impl User {
 ///             title: String::from("How many times have you experienced this in the last week?"),
 ///             options: vec![MultichoiceQuestionOption {
 ///                 name: String::from("Once"),
-///                 id: ObjectId::new(),
+///                 id: Some(ObjectId::new()),
 ///             }],
 ///             min_selected: 1,
 ///             max_selected: 2,
@@ -93,27 +93,11 @@ impl User {
 ///         Event::FormSubmitted(FormSubmitted {
 ///             answers: vec![
 ///                 QuestionAndAnswer::Multichoice(
-///                     MultichoiceQuestion {
-///                         id: Some(ObjectId::new()),
-///                         title: String::from(
-///                             "How many times have you experienced this in the last week?",
-///                         ),
-///                         options: vec![MultichoiceQuestionOption {
-///                             name: String::from("Once"),
-///                             id: ObjectId::new(),
-///                         }],
-///                         min_selected: 1,
-///                         max_selected: 2,
-///                     },
+///                     ObjectId::new(),
 ///                     ObjectId::new(),
 ///                 ),
 ///                 QuestionAndAnswer::FreeForm(
-///                     FreeFormQuestion {
-///                         id: Some(ObjectId::new()),
-///                         title: String::from("Is there anything else you would like to add?"),
-///                         max_length: 200,
-///                         min_length: 0,
-///                     },
+///                     ObjectId::new(),
 ///                     String::from("I wasn't able to press the elevator buttons this morning"),
 ///                 ),
 ///             ],
