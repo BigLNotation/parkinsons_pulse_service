@@ -9,12 +9,36 @@ pub struct User {
     pub id: Option<ObjectId>,
     pub first_name: String,
     pub last_name: String,
-    pub national_health_identifer: String,
+    pub national_health_identifier: String,
     pub email_address: String,
     pub hashed_password: String,
     pub is_patient: bool,
     pub caregivers: Vec<ObjectId>,
     pub form_templates: Vec<Form>,
+}
+
+impl User {
+    pub fn create(
+        first_name: String,
+        last_name: String,
+        national_health_identifier: String,
+        email_address: String,
+        password: String,
+        is_patient: bool,
+    ) -> Self {
+        Self {
+            id: None,
+            first_name,
+            last_name,
+            national_health_identifier,
+            email_address,
+            // TODO!!!!!!: password hashing (not that passwords are used at all currently)
+            hashed_password: password,
+            is_patient,
+            caregivers: Vec::new(),
+            form_templates: Vec::new(),
+        }
+    }
 }
 
 /// A form that clients fill in is represented here
@@ -111,6 +135,24 @@ pub struct Form {
     pub questions: Vec<Question>,
     /// List of events such as a user filling in a form or a moderator updating the form
     pub events: Vec<Event>,
+}
+
+impl Form {
+    pub fn create(
+        id: ObjectId,
+        title: String,
+        created_by: ObjectId,
+        questions: Vec<Question>,
+    ) -> Self {
+        Self {
+            id: Some(id),
+            title,
+            created_by,
+            created_at: DateTime::now(),
+            questions,
+            events: Vec::new(),
+        }
+    }
 }
 
 /// This represents a form event, either filling in the form and submitting it, or changing a question

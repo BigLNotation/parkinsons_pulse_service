@@ -14,18 +14,14 @@ pub async fn create_user(
     State(db): State<Database>,
     Json(payload): Json<CreateUserPayload>,
 ) -> Response {
-    let user = User {
-        id: None,
-        first_name: payload.first_name,
-        last_name: payload.last_name,
-        national_health_identifer: payload.national_health_identifer,
-        email_address: payload.email_address,
-        // TODO!!!!!!: password hashing (not that passwords are used at all currently)
-        hashed_password: payload.password,
-        is_patient: payload.is_patient,
-        caregivers: Vec::new(),
-        form_templates: Vec::new(),
-    };
+    let user = User::create(
+        payload.first_name,
+        payload.last_name,
+        payload.national_health_identifier,
+        payload.email_address,
+        payload.password,
+        payload.is_patient,
+    );
     let result = db.collection::<User>("users").insert_one(user).await;
     match result {
         Ok(result) => (

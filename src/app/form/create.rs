@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use mongodb::{
-    bson::{doc, oid::ObjectId, to_document, DateTime},
+    bson::{doc, oid::ObjectId, to_document},
     Database,
 };
 use serde_json::json;
@@ -18,14 +18,7 @@ pub async fn create_form(
     Json(payload): Json<CreateFormPayload>,
 ) -> Response {
     let id = ObjectId::new();
-    let form = Form {
-        id: Some(id),
-        title: payload.title,
-        created_by: payload.user_id,
-        created_at: DateTime::now(),
-        questions: payload.questions,
-        events: Vec::new(),
-    };
+    let form = Form::create(id, payload.title, payload.user_id, payload.questions);
     let form_document = match to_document(&form) {
         Ok(doc) => doc,
         Err(e) => {
