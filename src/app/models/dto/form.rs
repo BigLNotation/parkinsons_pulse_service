@@ -12,7 +12,7 @@ pub struct CreateFormPayload {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct FormAnswersPayload {
+pub struct PushAnswersPayload {
     // TODO!: get user id from request header instead once we can do that - don't let people mess with each other's forms
     pub user_id: ObjectId,
     pub form_id: ObjectId,

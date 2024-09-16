@@ -9,13 +9,13 @@ use mongodb::{
     Database,
 };
 
-use crate::app::models::{dto::form::FormAnswersPayload, User};
+use crate::app::models::{dto::form::PushAnswersPayload, User};
 
 // TODO!: input validation wrt. string length, etc
 #[tracing::instrument]
 pub async fn push_form_answers(
     State(db): State<Database>,
-    Json(payload): Json<FormAnswersPayload>,
+    Json(payload): Json<PushAnswersPayload>,
 ) -> Response {
     let answers_document = match payload
         .answers

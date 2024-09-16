@@ -18,6 +18,7 @@ pub struct User {
 }
 
 impl User {
+    #[must_use]
     pub fn create(
         first_name: String,
         last_name: String,
@@ -122,6 +123,7 @@ pub struct Form {
 }
 
 impl Form {
+    #[must_use]
     pub fn create(
         id: ObjectId,
         title: String,
