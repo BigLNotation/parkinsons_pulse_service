@@ -19,13 +19,30 @@ resource "aws_ecs_service" "pp_service_service" {
     subnets = [aws_subnet.sn1_public.id, aws_subnet.sn2_public.id,
                aws_subnet.sn1_private.id, aws_subnet.sn2_private.id]
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.pp_service_tg.arn
+    container_name = "app"
+    container_port = 4444
+  }
+
+  depends_on = [aws_lb_listener.listener]
 }
 
 resource "aws_ecs_task_definition" "pp_service_td" {
+  family                   = "pp_service"
+  requires_compatibilities = ["FARGATE"]
+
+  cpu                = "256"
+  memory             = "512"
+  network_mode       = "awsvpc"
+  task_role_arn      = "arn:aws:iam::025066274148:role/ecsTaskRole"
+  execution_role_arn = "arn:aws:iam::025066274148:role/ecsTaskRole"
+
   container_definitions = jsonencode([
     {
       name         = "app"
-      image        = "${aws_ecr_repository.pp_service_repo.repository_url}:latest"
+      image        = aws_ecr_repository.pp_service_repo.repository_url
       cpu          = 256
       memory       = 512
       essential    = true
@@ -41,12 +58,4 @@ resource "aws_ecs_task_definition" "pp_service_td" {
       ]
     }
   ])
-  family                   = "pp_service"
-  requires_compatibilities = ["FARGATE"]
-
-  cpu                = "256"
-  memory             = "512"
-  network_mode       = "awsvpc"
-  task_role_arn      = "arn:aws:iam::278336116187:role/ecsTaskExecutionRole"
-  execution_role_arn = "arn:aws:iam::278336116187:role/ecsTaskExecutionRole"
 }

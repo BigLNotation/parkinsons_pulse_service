@@ -13,3 +13,11 @@ output "ecr_repository_name" {
 output "ecr_registry_url" {
   value = aws_ecr_repository.pp_service_repo.repository_url
 }
+
+output "alb_hostname" {
+  value = aws_alb.pp_service.dns_name
+}
+
+output "deployed_hostname" {
+  value = aws_route53_record.api_alias.records
+}
