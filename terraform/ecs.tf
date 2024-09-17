@@ -34,7 +34,7 @@ resource "aws_ecs_service" "pp_service_service" {
     container_port   = 4444
   }
 
-  #   depends_on = [aws_lb_listener.https]
+  depends_on = [aws_lb_listener.https]
 }
 
 resource "aws_ecs_task_definition" "pp_service_td" {
