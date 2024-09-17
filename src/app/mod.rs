@@ -1,10 +1,15 @@
+pub mod middleware;
 pub mod models;
+pub mod routes;
+pub mod utils;
 
+use dotenvy::dotenv;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use axum::http::StatusCode;
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::http::{HeaderValue, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{FromRef, MatchedPath, Path, State},
@@ -13,10 +18,13 @@ use axum::{
     Json, Router,
 };
 use mongodb::{bson::doc, Client, Database};
+use routes::auth::auth_routes;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::net::TcpListener;
+use tower_cookies::CookieManagerLayer;
 use tower_http::classify::ServerErrorsFailureClass;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::config;
@@ -61,6 +69,8 @@ impl FromRef<AppState> for Database {
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
+    dotenv().ok();
+
     let app_state = AppState::new().await.unwrap_or_else(|e| {
         tracing::error!(error = %e, "Error occurred while creating app state");
         panic!("Error occurred while creating app state");
@@ -72,7 +82,21 @@ pub async fn run() {
         .route("/read/:id", get(read_example))
         .route("/write", put(write_example))
         .route("/fail", get(failure))
+        .nest("/auth", auth_routes())
         .with_state(app_state)
+        .layer(CookieManagerLayer::new())
+        .layer(
+          CorsLayer::new()
+            .allow_origin(
+              std::env::var("ORIGIN_DOMAIN")
+                .expect("ORIGIN_DOMAIN environment variable must be set")
+                .parse::<HeaderValue>()
+                .unwrap(),
+            )
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::DELETE])
+            .allow_headers([CONTENT_TYPE, AUTHORIZATION])
+            .allow_credentials(true),
+        )
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request

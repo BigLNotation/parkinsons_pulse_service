@@ -18,9 +18,10 @@ use tower_cookies::Cookies;
 use tracing::info;
 
 use crate::{
-    middleware::auth::Auth,
-    utils::auth::{generate_jwt, AuthCookieBuilder},
-    AppState,
+    app::middleware::auth::Auth,
+    app::models::User,
+    app::utils::auth::{generate_jwt, AuthCookieBuilder},
+    app::AppState,
 };
 
 fn hash_password(password: &str) -> Result<String, argon2::Error> {
@@ -35,26 +36,6 @@ fn hash_password(password: &str) -> Result<String, argon2::Error> {
 
 fn verify_password(password: &[u8], hash: &String) -> argon2::Result<bool> {
     argon2::verify_encoded(hash, password)
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct SignInInformation {
-    #[serde(rename = "_id")]
-    pub id: bson::oid::ObjectId,
-    pub first_name: String,
-    pub last_name: String,
-}
-
-impl TryFrom<User> for SignInInformation {
-    type Error = anyhow::Error;
-    fn try_from(value: User) -> anyhow::Result<Self> {
-        Ok(SignInInformation {
-            id: value.id.ok_or(anyhow::anyhow!("missing user id"))?,
-            first_name: value.first_name,
-            last_name: value.last_name,
-            phone_number: value.phone_number,
-        })
-    }
 }
 
 pub fn auth_routes() -> Router<AppState> {
@@ -72,18 +53,13 @@ pub async fn info(Auth(user): Auth) -> Response {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct PhoneNumber {
-    pub country_code: i64,
-    pub national_number: String,
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct CreateUserBody {
     first_name: String,
     last_name: String,
-    phone_number: PhoneNumber,
     password: String,
+    email_address: String,
+    is_patient: bool,
 }
 
 pub async fn create(
@@ -100,10 +76,13 @@ pub async fn create(
 
     let new_user = User {
         id: None,
+        email_address: create_user_body.email_address,
         first_name: create_user_body.first_name,
         last_name: create_user_body.last_name,
-        phone_number: create_user_body.phone_number,
         hashed_password,
+        is_patient: create_user_body.is_patient,
+        caregivers: vec![],
+        form_templates: vec![],
     };
 
     let Ok(serialized_user) = to_bson(&new_user) else {
@@ -120,17 +99,15 @@ pub async fn create(
         )
             .into_response();
     };
-    match state
-        .db
-        .collection("users")
-        .insert_one(document, None)
-        .await
-    {
+    match state.db.collection("users").insert_one(document).await {
         Ok(..) => StatusCode::OK.into_response(),
         Err(err) => match err.kind.as_ref() {
             ErrorKind::Write(mongodb::error::WriteFailure::WriteError(err)) => {
                 if err.code == 11000 {
-                    return (StatusCode::BAD_REQUEST, String::from("Phone Number in use"))
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        String::from("Email Address in use"),
+                    )
                         .into_response();
                 }
                 return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
@@ -142,7 +119,7 @@ pub async fn create(
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginUserBody {
-    phone_number: PhoneNumber,
+    email_address: String,
     password: String,
 }
 
@@ -152,16 +129,10 @@ pub async fn login(
     Json(body): Json<LoginUserBody>,
 ) -> Response {
     let query = doc! {
-      "phone_number.country_code": &body.phone_number.country_code,
-      "phone_number.national_number": &body.phone_number.national_number,
+      "email_address": &body.email_address,
     };
 
-    let Ok(Some(user)) = state
-        .db
-        .collection::<User>("users")
-        .find_one(query, None)
-        .await
-    else {
+    let Ok(Some(user)) = state.db.collection::<User>("users").find_one(query).await else {
         return StatusCode::BAD_REQUEST.into_response();
     };
 
@@ -172,6 +143,11 @@ pub async fn login(
     let Ok(user_without_password) = user.try_into() else {
         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
     };
+
+    info!(
+        "generated user without password: {:#?}",
+        user_without_password
+    );
 
     let Ok(cookie_value) = generate_jwt(&user_without_password) else {
         return (

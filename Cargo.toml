@@ -26,7 +26,7 @@ tracing-opentelemetry = "0.26.0"
 opentelemetry-jaeger = "0.22.0"
 mongodb = "3.0.1"
 dotenvy = "0.15.7"
-anyhow = "1.0.86"
+anyhow = { version = "1.0.86", features = [] }
 
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 chrono = { version = "0.4.38", features = ["serde"] }
