@@ -14,7 +14,7 @@ pub async fn create_user(
     State(db): State<Database>,
     Json(payload): Json<CreateUserPayload>,
 ) -> Response {
-    let user = User::create(
+    let user = User::from(
         payload.first_name,
         payload.last_name,
         payload.national_health_identifier,

@@ -7,17 +7,16 @@ use std::time::Duration;
 use anyhow::Context;
 use axum::{
     extract::{FromRef, MatchedPath},
-    http::Request,
-    response::Response,
-    routing::{get, put},
-    Router,
+    http::{Request, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
+    Json, Router,
 };
-use form::{create::create_form, push_answers::push_form_answers};
 use mongodb::{bson::doc, Client, Database};
+use serde_json::json;
 use tokio::net::TcpListener;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::trace::TraceLayer;
-use user::{create::create_user, get::get_user};
 
 use crate::config;
 
@@ -68,10 +67,9 @@ pub async fn run() {
     tracing::info!("App state initialized");
 
     let app = Router::new()
-        .route("/user/get/:id", get(get_user))
-        .route("/user/create", put(create_user))
-        .route("/form/create", put(create_form))
-        .route("/form/push_answers", put(push_form_answers))
+        .route("/", get(hello_world))
+        .nest("/user", user::router())
+        .nest("/form", form::router())
         .with_state(app_state)
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
@@ -113,4 +111,11 @@ pub async fn run() {
         panic!("Axum failed to serve app");
     });
     tracing::warn!("Axum stop serving app");
+}
+
+#[tracing::instrument]
+async fn hello_world() -> impl IntoResponse {
+    tracing::info!("Hello world!");
+
+    (StatusCode::OK, Json(json!({"message": "Hello World!"})))
 }

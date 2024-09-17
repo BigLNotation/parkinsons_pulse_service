@@ -18,7 +18,7 @@ pub async fn create_form(
     Json(payload): Json<CreateFormPayload>,
 ) -> Response {
     let id = ObjectId::new();
-    let form = Form::create(id, payload.title, payload.user_id, payload.questions);
+    let form = Form::from(id, payload.title, payload.user_id, payload.questions);
     let form_document = match to_document(&form) {
         Ok(doc) => doc,
         Err(e) => {

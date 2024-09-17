@@ -19,7 +19,7 @@ pub struct User {
 
 impl User {
     #[must_use]
-    pub fn create(
+    pub fn from(
         first_name: String,
         last_name: String,
         national_health_identifier: String,
@@ -124,7 +124,7 @@ pub struct Form {
 
 impl Form {
     #[must_use]
-    pub fn create(
+    pub fn from(
         id: ObjectId,
         title: String,
         created_by: ObjectId,
