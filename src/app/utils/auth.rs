@@ -1,4 +1,7 @@
-use crate::app::{middleware::auth::UserClaims, models::User};
+use crate::{
+    app::{middleware::auth::UserClaims, models::User},
+    config,
+};
 use anyhow::anyhow;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
@@ -22,7 +25,7 @@ impl<'a> AuthCookieBuilder<'a> {
     pub fn new(value: String) -> Self {
         Self {
             cookie: CookieBuilder::new("auth_token", value)
-                .domain(std::env::var("DOMAIN").expect("DOMAIN environment variable must be set"))
+                .domain(config::get_domain())
                 .path("/")
                 .http_only(true)
                 .same_site(tower_cookies::cookie::SameSite::Lax)
@@ -50,7 +53,7 @@ pub fn generate_jwt(user: &UserClaims) -> anyhow::Result<String> {
         user: user.clone(),
         exp: exp as usize,
     };
-    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let jwt_secret = config::get_jwt_secret();
     Ok(encode(
         &Header::default(),
         &claims,

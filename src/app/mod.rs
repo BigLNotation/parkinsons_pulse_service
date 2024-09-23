@@ -4,6 +4,9 @@ pub mod routes;
 pub mod utils;
 
 use dotenvy::dotenv;
+use models::User;
+use mongodb::options::IndexOptions;
+use mongodb::IndexModel;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -50,6 +53,12 @@ impl AppState {
                 |e| tracing::error!(error = %e, "Failed to connect to database at {database_url}"),
             )
             .with_context(|| format!("Failed to connect to database at {database_url}"))?;
+        create_unique_email_address_index(&db)
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to create unique index on email address"),
+            )
+            .with_context(|| format!("Failed to create unique index on email address"))?;
         tracing::info!("Connected to database at {database_url}");
         Ok(AppState { db })
     }
@@ -75,6 +84,7 @@ pub async fn run() {
         tracing::error!(error = %e, "Error occurred while creating app state");
         panic!("Error occurred while creating app state");
     });
+
     tracing::info!("App state initialized");
 
     let app = Router::new()
@@ -88,12 +98,9 @@ pub async fn run() {
         .layer(
           CorsLayer::new()
             .allow_origin(
-              std::env::var("ORIGIN_DOMAIN")
-                .expect("ORIGIN_DOMAIN environment variable must be set")
-                .parse::<HeaderValue>()
-                .unwrap(),
+              config::get_origin_domain(),
             )
-            .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::DELETE])
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::DELETE, Method::PATCH])
             .allow_headers([CONTENT_TYPE, AUTHORIZATION])
             .allow_credentials(true),
         )
@@ -208,4 +215,14 @@ async fn write_example(
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+}
+
+async fn create_unique_email_address_index(db: &Database) -> anyhow::Result<()> {
+    let collection = db.collection::<User>("users");
+    let index_model = IndexModel::builder()
+        .keys(doc! { "email_address": 1 })
+        .options(IndexOptions::builder().unique(true).build())
+        .build();
+    collection.create_index(index_model).await?;
+    Ok(())
 }
