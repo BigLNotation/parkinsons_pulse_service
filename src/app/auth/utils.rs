@@ -1,7 +1,4 @@
-use crate::{
-    app::{middleware::auth::UserClaims, models::User},
-    config,
-};
+use crate::{app::auth::middleware::UserClaims, config};
 use anyhow::anyhow;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
@@ -22,6 +19,7 @@ pub struct AuthCookieBuilder<'a> {
 }
 
 impl<'a> AuthCookieBuilder<'a> {
+    #[must_use]
     pub fn new(value: String) -> Self {
         Self {
             cookie: CookieBuilder::new("auth_token", value)
@@ -32,6 +30,7 @@ impl<'a> AuthCookieBuilder<'a> {
                 .secure(false),
         }
     }
+    #[must_use]
     pub fn max_age(self, age: tower_cookies::cookie::time::Duration) -> Self {
         let mut exp_offset = OffsetDateTime::now_utc();
         exp_offset += age;
@@ -39,11 +38,19 @@ impl<'a> AuthCookieBuilder<'a> {
             cookie: self.cookie.max_age(age).expires(exp_offset),
         }
     }
+    #[must_use]
     pub fn build(self) -> Cookie<'a> {
         self.cookie.build()
     }
 }
 
+///
+/// # Errors
+/// This function errors if it couldn't add a signed and dated expiry or couldn't convert exp to a usize
+///
+///
+///
+///
 pub fn generate_jwt(user: &UserClaims) -> anyhow::Result<String> {
     let exp = Utc::now()
         .checked_add_signed(Duration::weeks(3))
@@ -51,7 +58,7 @@ pub fn generate_jwt(user: &UserClaims) -> anyhow::Result<String> {
         .timestamp();
     let claims = Claims {
         user: user.clone(),
-        exp: exp as usize,
+        exp: usize::try_from(exp)?,
     };
     let jwt_secret = config::get_jwt_secret();
     Ok(encode(
@@ -61,15 +68,17 @@ pub fn generate_jwt(user: &UserClaims) -> anyhow::Result<String> {
     )?)
 }
 
+///
+///
+/// # Errors
+/// This function errors if the JWT token is invalid
 pub fn decode_jwt(token: &str) -> anyhow::Result<Claims> {
-    let jwt_secret = std::env::var("JWT_SECRET")?;
+    let jwt_secret = config::get_jwt_secret();
     let validation = Validation::new(Algorithm::HS256);
-
     let token_data = decode::<Claims>(
-        &token,
+        token,
         &DecodingKey::from_secret(jwt_secret.as_ref()),
         &validation,
     )?;
-
     Ok(token_data.claims)
 }

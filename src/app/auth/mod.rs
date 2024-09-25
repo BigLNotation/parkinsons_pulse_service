@@ -1,26 +1,28 @@
+pub mod middleware;
+pub mod utils;
+
 use argon2::{self, Config};
 use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{delete, get, patch, post},
+    routing::{get, patch, post},
     Json, Router,
 };
 use mongodb::{
-    bson::{self, doc, to_bson, Bson},
-    error::{ErrorKind, WriteError},
+    bson::{doc, to_bson, Bson},
+    error::ErrorKind,
 };
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tower_cookies::Cookies;
 use tracing::info;
 
 use crate::{
-    app::middleware::auth::Auth,
+    app::auth::middleware::Auth,
+    app::auth::utils::{generate_jwt, AuthCookieBuilder},
     app::models::User,
-    app::utils::auth::{generate_jwt, AuthCookieBuilder},
     app::AppState,
 };
 
@@ -34,11 +36,11 @@ fn hash_password(password: &str) -> Result<String, argon2::Error> {
     argon2::hash_encoded(password.as_bytes(), salt.as_bytes(), &config)
 }
 
-fn verify_password(password: &[u8], hash: &String) -> argon2::Result<bool> {
+fn verify_password(password: &[u8], hash: &str) -> argon2::Result<bool> {
     argon2::verify_encoded(hash, password)
 }
 
-pub fn auth_routes() -> Router<AppState> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/create", post(create))
         .route("/login", post(login))
@@ -46,6 +48,10 @@ pub fn auth_routes() -> Router<AppState> {
         .route("/info", get(info))
 }
 
+///
+///
+/// # Panics
+/// Panics if the form data being inputted cannot be converted into JSON
 pub async fn info(Auth(user): Auth) -> Response {
     match user {
         Some(info) => (StatusCode::OK, serde_json::to_string(&info).unwrap()).into_response(),
@@ -74,16 +80,13 @@ pub async fn create(
             .into_response();
     };
 
-    let new_user = User {
-        id: None,
-        email_address: create_user_body.email_address,
-        first_name: create_user_body.first_name,
-        last_name: create_user_body.last_name,
+    let new_user = User::from(
+        create_user_body.first_name,
+        create_user_body.last_name,
+        create_user_body.email_address,
         hashed_password,
-        is_patient: create_user_body.is_patient,
-        caregivers: vec![],
-        form_templates: vec![],
-    };
+        create_user_body.is_patient,
+    );
 
     let Ok(serialized_user) = to_bson(&new_user) else {
         return (
@@ -110,7 +113,7 @@ pub async fn create(
                     )
                         .into_response();
                 }
-                return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+                (StatusCode::INTERNAL_SERVER_ERROR).into_response()
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
         },
@@ -167,8 +170,8 @@ pub async fn login(
     StatusCode::OK.into_response()
 }
 
-async fn logout(mut cookies: Cookies) -> Response {
-    let mut auth_cookie = AuthCookieBuilder::new("".to_string()).build();
+async fn logout(cookies: Cookies) -> Response {
+    let mut auth_cookie = AuthCookieBuilder::new(String::new()).build();
     auth_cookie.make_removal();
     cookies.add(auth_cookie);
     (StatusCode::OK).into_response()

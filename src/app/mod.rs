@@ -1,10 +1,10 @@
+pub mod auth;
 pub mod form;
-pub mod middleware;
 pub mod models;
-pub mod routes;
 pub mod user;
-pub mod utils;
 
+use axum::extract::{Path, State};
+use axum::http::Method;
 use dotenvy::dotenv;
 use models::User;
 use mongodb::options::IndexOptions;
@@ -13,8 +13,6 @@ use std::time::Duration;
 
 use anyhow::Context;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use axum::http::{HeaderValue, Method, StatusCode};
-use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{FromRef, MatchedPath},
     http::{Request, StatusCode},
@@ -23,7 +21,6 @@ use axum::{
     Json, Router,
 };
 use mongodb::{bson::doc, Client, Database};
-use routes::auth::auth_routes;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::net::TcpListener;
@@ -60,7 +57,7 @@ impl AppState {
             .inspect_err(
                 |e| tracing::error!(error = %e, "Failed to create unique index on email address"),
             )
-            .with_context(|| format!("Failed to create unique index on email address"))?;
+            .with_context(|| String::from("Failed to create unique index on email address"))?;
         tracing::info!("Connected to database at {database_url}");
         Ok(AppState { db })
     }
@@ -93,7 +90,7 @@ pub async fn run() {
         .route("/", get(hello_world))
         .nest("/user", user::router())
         .nest("/form", form::router())
-        .nest("/auth", auth_routes())
+        .nest("/auth", auth::router())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())
         .layer(
