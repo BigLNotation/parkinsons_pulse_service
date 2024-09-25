@@ -1,18 +1,20 @@
+pub mod dto;
+
 use mongodb::bson::{oid::ObjectId, DateTime};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub first_name: String,
-    pub last_name: String,
-    // national_health_identifer: String,
-    pub email_address: String,
-    pub hashed_password: String,
-    pub is_patient: bool,
-    pub caregivers: Vec<ObjectId>,
-    pub form_templates: Vec<Form>,
+    id: Option<ObjectId>,
+    first_name: String,
+    last_name: String,
+    national_health_identifer: String,
+    email_address: String,
+    hashed_password: String,
+    is_patient: bool,
+    caregivers: Vec<ObjectId>,
+    form_templates: Vec<Form>,
 }
 
 /// A form that clients fill in is represented here
@@ -34,7 +36,7 @@ pub struct User {
 ///             title: String::from("How many times have you experienced this in the last week?"),
 ///             options: vec![MultichoiceQuestionOption {
 ///                 name: String::from("Once"),
-///                 id: ObjectId::new(),
+///                 id: Some(ObjectId::new()),
 ///             }],
 ///             min_selected: 1,
 ///             max_selected: 2,
@@ -67,27 +69,11 @@ pub struct User {
 ///         Event::FormSubmitted(FormSubmitted {
 ///             answers: vec![
 ///                 QuestionAndAnswer::Multichoice(
-///                     MultichoiceQuestion {
-///                         id: Some(ObjectId::new()),
-///                         title: String::from(
-///                             "How many times have you experienced this in the last week?",
-///                         ),
-///                         options: vec![MultichoiceQuestionOption {
-///                             name: String::from("Once"),
-///                             id: ObjectId::new(),
-///                         }],
-///                         min_selected: 1,
-///                         max_selected: 2,
-///                     },
+///                     ObjectId::new(),
 ///                     ObjectId::new(),
 ///                 ),
 ///                 QuestionAndAnswer::FreeForm(
-///                     FreeFormQuestion {
-///                         id: Some(ObjectId::new()),
-///                         title: String::from("Is there anything else you would like to add?"),
-///                         max_length: 200,
-///                         min_length: 0,
-///                     },
+///                     ObjectId::new(),
 ///                     String::from("I wasn't able to press the elevator buttons this morning"),
 ///                 ),
 ///             ],
@@ -109,6 +95,41 @@ pub struct Form {
     pub questions: Vec<Question>,
     /// List of events such as a user filling in a form or a moderator updating the form
     pub events: Vec<Event>,
+}
+
+impl Form {
+    #[must_use]
+    pub fn from(
+        id: ObjectId,
+        title: String,
+        created_by: ObjectId,
+        mut questions: Vec<Question>,
+    ) -> Self {
+        for question in &mut questions {
+            match question {
+                Question::Multichoice(ref mut question) => {
+                    question.id = Some(ObjectId::new());
+                    for option in &mut question.options {
+                        option.id = Some(ObjectId::new());
+                    }
+                }
+                Question::Slider(ref mut question) => {
+                    question.id = Some(ObjectId::new());
+                }
+                Question::FreeForm(ref mut question) => {
+                    question.id = Some(ObjectId::new());
+                }
+            }
+        }
+        Self {
+            id: Some(id),
+            title,
+            created_by,
+            created_at: DateTime::now(),
+            questions,
+            events: Vec::new(),
+        }
+    }
 }
 
 /// This represents a form event, either filling in the form and submitting it, or changing a question
@@ -161,9 +182,9 @@ pub type FreeFormAnswer = String;
 /// Combination of both the question and answer
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum QuestionAndAnswer {
-    Multichoice(MultichoiceQuestion, MultichoiceAnswer),
-    Slider(SliderQuestion, SliderAnswer),
-    FreeForm(FreeFormQuestion, FreeFormAnswer),
+    Multichoice(ObjectId, MultichoiceAnswer),
+    Slider(ObjectId, SliderAnswer),
+    FreeForm(ObjectId, FreeFormAnswer),
 }
 
 /// Free form question with some validation rules you could apply
@@ -200,6 +221,6 @@ pub struct MultichoiceQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestionOption {
     pub name: String,
-    #[serde(rename = "_id")]
-    pub id: ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
 }

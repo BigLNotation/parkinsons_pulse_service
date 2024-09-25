@@ -1,0 +1,42 @@
+@hostname=localhost
+@port=4444
+@address=http://{{hostname}}:{{port}}
+
+### Create a new `Form` associated with a given user.
+# On success, returns {created_id: ObjectId}
+#
+# This endpoint takes an array of questions; three questions are hardcoded here as an example.
+#
+# @prompt user_id the ObjectId of the user - TODO once auth is implemented this will be based on the auth header instead
+# @prompt title the title of the form
+
+PUT {{address}}/form/create
+Content-Type: application/json
+
+{
+	"user_id": "{{user_id}}",
+	"title": "{{title}}",
+	"questions": [
+		{"Multichoice": {
+			"title": "Example multichoice question",
+			"options": [
+				{"name": "option_1"},
+				{"name": "option_2"}
+			],
+			"min_selected": 1,
+			"max_selected": 1
+		}},
+		{"Slider": {
+			"title": "Example slider question",
+			"units": "kWh",
+			"low": 0,
+			"high": 10000,
+			"step": 100
+		}},
+		{"FreeForm": {
+			"title": "Example freeform question",
+			"min_length": 0,
+			"max_length": 1000
+		}}
+	]
+}

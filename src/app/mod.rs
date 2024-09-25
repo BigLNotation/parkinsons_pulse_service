@@ -1,13 +1,14 @@
+pub mod form;
 pub mod middleware;
 pub mod models;
 pub mod routes;
+pub mod user;
 pub mod utils;
 
 use dotenvy::dotenv;
 use models::User;
 use mongodb::options::IndexOptions;
 use mongodb::IndexModel;
-use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -15,9 +16,10 @@ use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::{
-    extract::{FromRef, MatchedPath, Path, State},
-    http::Request,
-    routing::{get, put},
+    extract::{FromRef, MatchedPath},
+    http::{Request, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
     Json, Router,
 };
 use mongodb::{bson::doc, Client, Database};
@@ -89,9 +91,8 @@ pub async fn run() {
 
     let app = Router::new()
         .route("/", get(hello_world))
-        .route("/read/:id", get(read_example))
-        .route("/write", put(write_example))
-        .route("/fail", get(failure))
+        .nest("/user", user::router())
+        .nest("/form", form::router())
         .nest("/auth", auth_routes())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())
@@ -147,18 +148,8 @@ pub async fn run() {
 }
 
 #[tracing::instrument]
-async fn failure() -> impl IntoResponse {
-    // TODO: Remove example after first endpoint made
-    tracing::error!("I failed :(");
-
-    StatusCode::INTERNAL_SERVER_ERROR
-}
-
-#[tracing::instrument]
 async fn hello_world() -> impl IntoResponse {
-    // TODO: Remove example after first endpoint made
     tracing::info!("Hello world!");
-    foo();
 
     (StatusCode::OK, Json(json!({"message": "Hello World!"})))
 }
