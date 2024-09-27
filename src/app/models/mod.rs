@@ -9,7 +9,7 @@ pub struct User {
     pub id: Option<ObjectId>,
     pub first_name: String,
     pub last_name: String,
-    pub national_health_identifier: String,
+    // national_health_identifer: String,
     pub email_address: String,
     pub hashed_password: String,
     pub is_patient: bool,
@@ -22,22 +22,19 @@ impl User {
     pub fn from(
         first_name: String,
         last_name: String,
-        national_health_identifier: String,
         email_address: String,
         password: String,
         is_patient: bool,
-    ) -> Self {
-        Self {
+    ) -> User {
+        User {
             id: None,
             first_name,
             last_name,
-            national_health_identifier,
             email_address,
-            // TODO!!!!!!: password hashing (not that passwords are used at all currently)
             hashed_password: password,
             is_patient,
-            caregivers: Vec::new(),
-            form_templates: Vec::new(),
+            caregivers: vec![],
+            form_templates: vec![],
         }
     }
 }

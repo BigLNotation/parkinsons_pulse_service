@@ -17,7 +17,7 @@ pub async fn create_user(
     let user = User::from(
         payload.first_name,
         payload.last_name,
-        payload.national_health_identifier,
+        // payload.national_health_identifier,
         payload.email_address,
         payload.password,
         payload.is_patient,
