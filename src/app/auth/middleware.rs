@@ -7,7 +7,7 @@ use mongodb::bson::oid::ObjectId;
 use tower_cookies::Cookies;
 use tracing::info;
 
-use crate::app::{auth::utils::decode_jwt, auth::LoginUserBody, models::User};
+use crate::app::{auth::utils::decode_jwt, models::User};
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct UserClaims {
@@ -23,7 +23,7 @@ impl TryInto<UserClaims> for User {
     type Error = anyhow::Error;
     fn try_into(self) -> Result<UserClaims, Self::Error> {
         Ok(UserClaims {
-            id: self.id.clone().ok_or(anyhow!("user is missing id"))?,
+            id: self.id.ok_or(anyhow!("user is missing id"))?,
             first_name: self.first_name,
             last_name: self.last_name,
             email_address: self.email_address,
