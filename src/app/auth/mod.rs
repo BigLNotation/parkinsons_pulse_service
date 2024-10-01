@@ -139,7 +139,7 @@ pub async fn login(
         return StatusCode::BAD_REQUEST.into_response();
     };
 
-    let Ok(true) = verify_password(&body.password.as_bytes(), &user.hashed_password) else {
+    let Ok(true) = verify_password(body.password.as_bytes(), &user.hashed_password) else {
         return StatusCode::BAD_REQUEST.into_response();
     };
 
