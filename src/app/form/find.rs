@@ -1,5 +1,5 @@
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -12,15 +12,18 @@ use serde_json::json;
 
 use crate::app::{
     auth::{self, middleware::Auth},
-    models::{dto::form::CreateFormPayload, Form, User},
+    models::{
+        dto::form::{CreateFormPayload, FindPath},
+        Form, User,
+    },
 };
 
 #[tracing::instrument]
 #[axum::debug_handler]
-pub async fn create_form(
+pub async fn find(
     State(db): State<Database>,
     Auth(auth): Auth,
-    Json(payload): Json<CreateFormPayload>,
+    Path(path): Path<FindPath>,
 ) -> Response {
     let Some(auth) = auth else {
         return (
@@ -30,11 +33,15 @@ pub async fn create_form(
             .into_response();
     };
 
-    let id = ObjectId::new();
-    let form = Form::from(id, payload.title, auth.id, auth.id, payload.questions);
-    let result = db.collection::<Form>("forms").insert_one(form).await;
+    let result = db
+        .collection::<Form>("forms")
+        .find_one(doc! {
+          "_id": path.form_id,
+          "user_id": auth.id
+        })
+        .await;
     match result {
-        Ok(..) => (StatusCode::OK, Json(json! ({ "created_id": id }))).into_response(),
+        Ok(data) => (StatusCode::OK, Json(data)).into_response(),
         Err(e) => {
             tracing::error!(error = %e, "Error occurred while querying database");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()

@@ -1,5 +1,5 @@
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -9,14 +9,31 @@ use mongodb::{
     Database,
 };
 
-use crate::app::models::{dto::form::PushAnswersPayload, User};
+use crate::app::{
+    auth::middleware::Auth,
+    models::{
+        dto::form::{CreateFormPayload, SubmitPath, SubmitPayload},
+        Form, User,
+    },
+};
 
 // TODO!: input validation wrt. string length, etc
 #[tracing::instrument]
-pub async fn push_form_answers(
+#[axum::debug_handler]
+pub async fn submit(
     State(db): State<Database>,
-    Json(payload): Json<PushAnswersPayload>,
+    Auth(auth): Auth,
+    Path(path): Path<SubmitPath>,
+    Json(payload): Json<SubmitPayload>,
 ) -> Response {
+    let Some(auth) = auth else {
+        return (
+            StatusCode::UNAUTHORIZED,
+            String::from("You must be signed in to add answers to the form"),
+        )
+            .into_response();
+    };
+
     let answers_document = match payload
         .answers
         .iter()
@@ -30,12 +47,12 @@ pub async fn push_form_answers(
         }
     };
     let result = db
-        .collection::<User>("users")
+        .collection::<Form>("forms")
         .update_one(
-            doc! { "_id": payload.user_id, "form_templates._id": payload.form_id },
-            doc! { "$push": { "form_templates.$.events": { "FormSubmitted": {
+            doc! { "user_id": auth.id, "_id": path.form_id },
+            doc! { "$push": { "events": { "FormSubmitted": {
                 "answers": answers_document,
-                "submitted_by": payload.user_id,
+                "submitted_by": auth.id,
                 "submitted_at": DateTime::now()
             }} } },
         )

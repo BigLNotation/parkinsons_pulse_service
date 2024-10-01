@@ -23,7 +23,7 @@ impl<'a> AuthCookieBuilder<'a> {
     pub fn new(value: String) -> Self {
         Self {
             cookie: CookieBuilder::new("auth_token", value)
-                .domain(config::get_domain())
+                // .domain(config::get_domain())
                 .path("/")
                 .http_only(true)
                 .same_site(tower_cookies::cookie::SameSite::Lax)

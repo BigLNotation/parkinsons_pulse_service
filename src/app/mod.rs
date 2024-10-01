@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod form;
 pub mod models;
-pub mod user;
 
 use axum::extract::{Path, State};
 use axum::http::Method;
@@ -88,7 +87,6 @@ pub async fn run() {
 
     let app = Router::new()
         .route("/", get(hello_world))
-        .nest("/user", user::router())
         .nest("/form", form::router())
         .nest("/auth", auth::router())
         .with_state(app_state)

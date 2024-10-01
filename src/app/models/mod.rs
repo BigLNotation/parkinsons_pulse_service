@@ -14,7 +14,6 @@ pub struct User {
     pub hashed_password: String,
     pub is_patient: bool,
     pub caregivers: Vec<ObjectId>,
-    pub form_templates: Vec<Form>,
 }
 
 impl User {
@@ -34,7 +33,6 @@ impl User {
             hashed_password: password,
             is_patient,
             caregivers: vec![],
-            form_templates: vec![],
         }
     }
 }
@@ -109,6 +107,8 @@ impl User {
 pub struct Form {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_id: Option<ObjectId>,
     /// Title of the form for clients
     pub title: String,
     pub created_by: ObjectId,
@@ -125,6 +125,7 @@ impl Form {
         id: ObjectId,
         title: String,
         created_by: ObjectId,
+        user_id: ObjectId,
         mut questions: Vec<Question>,
     ) -> Self {
         for question in &mut questions {
@@ -147,6 +148,7 @@ impl Form {
             id: Some(id),
             title,
             created_by,
+            user_id: Some(user_id),
             created_at: DateTime::now(),
             questions,
             events: Vec::new(),
@@ -212,7 +214,7 @@ pub enum QuestionAndAnswer {
 /// Free form question with some validation rules you could apply
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct FreeFormQuestion {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub title: String,
     pub max_length: u64,
@@ -221,7 +223,7 @@ pub struct FreeFormQuestion {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SliderQuestion {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub title: String,
     pub units: Option<String>,
@@ -232,7 +234,7 @@ pub struct SliderQuestion {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestion {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub title: String,
     pub options: Vec<MultichoiceQuestionOption>,
@@ -243,6 +245,6 @@ pub struct MultichoiceQuestion {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct MultichoiceQuestionOption {
     pub name: String,
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
 }
