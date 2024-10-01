@@ -1,14 +1,10 @@
-mod create;
-mod push_answers;
+mod submit;
 
 use axum::{routing::put, Router};
-use create::create_form;
-use push_answers::push_form_answers;
+use submit::submit_form;
 
 use super::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new()
-        .route("/create", put(create_form))
-        .route("/push_answers", put(push_form_answers))
+    Router::new().route("/submit", put(submit_form))
 }

@@ -10,15 +10,15 @@ use mongodb::{
 };
 use serde_json::json;
 
-use crate::app::models::{dto::form::CreateFormPayload, Form, User};
+use crate::app::models::{dto::form::SubmitFormPayload, Form, User};
 
 #[tracing::instrument]
-pub async fn create_form(
+pub async fn submit_form(
     State(db): State<Database>,
-    Json(payload): Json<CreateFormPayload>,
+    Json(payload): Json<SubmitFormPayload>,
 ) -> Response {
     let id = ObjectId::new();
-    let form = Form::from(id, payload.title, payload.user_id, payload.questions);
+    let form = Form::from(id, payload.title, payload.user_id, payload.responses);
     let form_document = match to_document(&form) {
         Ok(doc) => doc,
         Err(e) => {
@@ -30,7 +30,7 @@ pub async fn create_form(
         .collection::<User>("users")
         .update_one(
             doc! { "_id": payload.user_id },
-            doc! { "$push": { "form_templates": form_document } },
+            doc! { "$push": { "forms": form_document } },
         )
         .await;
     match result {
