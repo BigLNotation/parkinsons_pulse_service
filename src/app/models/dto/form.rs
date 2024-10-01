@@ -1,7 +1,7 @@
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
-use crate::app::models::QuestionAndAnswer;
+use crate::app::models::{Question, QuestionAndAnswer};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SubmitFormPayload {
