@@ -47,6 +47,7 @@ impl User {
 ///
 /// Form {
 ///     id: Some(ObjectId::new()),
+///     user_id: Some(ObjectId::new()),
 ///     title: String::from("Tremors"),
 ///     created_by: ObjectId::new(),
 ///     created_at: DateTime::now(),
