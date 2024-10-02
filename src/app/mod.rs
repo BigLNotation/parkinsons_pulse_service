@@ -1,32 +1,70 @@
-use std::sync::Arc;
+pub mod auth;
+pub mod form;
+pub mod models;
+
+use axum::extract::{Path, State};
+use axum::http::Method;
+use dotenvy::dotenv;
+use models::User;
+use mongodb::options::IndexOptions;
+use mongodb::IndexModel;
 use std::time::Duration;
 
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::{extract::MatchedPath, http::Request, routing::get, Json, Router};
-use mongodb::{Client, Database};
+use anyhow::Context;
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::{
+    extract::{FromRef, MatchedPath},
+    http::{Request, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
+    Json, Router,
+};
+use mongodb::{bson::doc, Client, Database};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::net::TcpListener;
+use tower_cookies::CookieManagerLayer;
 use tower_http::classify::ServerErrorsFailureClass;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::config;
 
-#[derive(Clone)]
-pub struct State {
-    pub db: Arc<Database>,
+#[allow(clippy::module_name_repetitions)]
+#[derive(Clone, Debug)]
+pub struct AppState {
+    pub db: Database,
 }
 
-impl State {
+impl AppState {
     /// # Errors
     ///
-    /// Will return 'Err' if there is no `DATABASE_URL` environment variable or the app
-    /// cannot connect to the database
+    /// Will return 'Err' if the app cannot connect to the database
     pub async fn new() -> anyhow::Result<Self> {
         let database_url = config::get_database_url();
-        let client = Client::with_uri_str(database_url).await?;
+        let client = Client::with_uri_str(database_url.clone()).await?;
         let db = client.database("capstone");
-        Ok(State { db: Arc::new(db) })
+        // Ping DB to make sure we can connect
+        db.run_command(doc! { "ping": 1 })
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to connect to database at {database_url}"),
+            )
+            .with_context(|| format!("Failed to connect to database at {database_url}"))?;
+        create_unique_email_address_index(&db)
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to create unique index on email address"),
+            )
+            .with_context(|| String::from("Failed to create unique index on email address"))?;
+        tracing::info!("Connected to database at {database_url}");
+        Ok(AppState { db })
+    }
+}
+
+impl FromRef<AppState> for Database {
+    fn from_ref(app_state: &AppState) -> Database {
+        app_state.db.clone()
     }
 }
 
@@ -38,16 +76,30 @@ impl State {
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
-    let app_state = State::new().await.unwrap_or_else(|e| {
-        tracing::error!(error = %e, "Failed to connect to database");
-        panic!("Failed to connect to database");
+    dotenv().ok();
+
+    let app_state = AppState::new().await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "Error occurred while creating app state");
+        panic!("Error occurred while creating app state");
     });
-    tracing::info!("Connected to database");
+
+    tracing::info!("App state initialized");
 
     let app = Router::new()
         .route("/", get(hello_world))
-        .route("/fail", get(failure))
+        .nest("/form", form::router())
+        .nest("/auth", auth::router())
         .with_state(app_state)
+        .layer(CookieManagerLayer::new())
+        .layer(
+          CorsLayer::new()
+            .allow_origin(
+              config::get_origin_domain(),
+            )
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::DELETE, Method::PATCH])
+            .allow_headers([CONTENT_TYPE, AUTHORIZATION])
+            .allow_credentials(true),
+        )
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
@@ -91,18 +143,8 @@ pub async fn run() {
 }
 
 #[tracing::instrument]
-async fn failure() -> impl IntoResponse {
-    // TODO: Remove example after first endpoint made
-    tracing::error!("I failed :(");
-
-    StatusCode::INTERNAL_SERVER_ERROR
-}
-
-#[tracing::instrument]
 async fn hello_world() -> impl IntoResponse {
-    // TODO: Remove example after first endpoint made
     tracing::info!("Hello world!");
-    foo();
 
     (StatusCode::OK, Json(json!({"message": "Hello World!"})))
 }
@@ -111,4 +153,62 @@ async fn hello_world() -> impl IntoResponse {
 fn foo() {
     // TODO: Remove example after first endpoint made
     tracing::warn!("foo!");
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ExampleDocument {
+    #[serde(rename = "_id")]
+    id: u32, // For actual documents we'll use ObjectId, this is just to make manual testing of this example simpler
+    string: String,
+    number: i32,
+}
+
+#[tracing::instrument]
+async fn read_example(Path(id): Path<u32>, State(db): State<Database>) -> Response {
+    // TODO: Remove example after first endpoint made
+    let document = db
+        .collection::<ExampleDocument>("testCollection")
+        .find_one(doc! { "_id": id })
+        .await;
+    match document {
+        Ok(document) => (StatusCode::OK, Json::from(document)).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+#[tracing::instrument]
+async fn write_example(
+    State(db): State<Database>,
+    Json(document): Json<ExampleDocument>,
+) -> Response {
+    // TODO: Remove example after first endpoint made
+    // For this example we don't distinguish adding a new document and overwriting an existing one, for simplicity
+    let result = db
+        .collection::<ExampleDocument>("testCollection")
+        .update_one(
+            doc! { "_id": document.id },
+            doc! {"$set": doc!{"string": document.string, "number": document.number}},
+        )
+        .upsert(true)
+        .await;
+    match result {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Error occurred while querying database");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+async fn create_unique_email_address_index(db: &Database) -> anyhow::Result<()> {
+    let collection = db.collection::<User>("users");
+    let index_model = IndexModel::builder()
+        .keys(doc! { "email_address": 1 })
+        .options(IndexOptions::builder().unique(true).build())
+        .build();
+    collection.create_index(index_model).await?;
+    Ok(())
 }
