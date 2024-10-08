@@ -65,36 +65,3 @@ pub async fn history(
         }
     }
 }
-
-#[tracing::instrument]
-#[axum::debug_handler]
-pub async fn find_all(State(db): State<Database>, Auth(auth): Auth) -> Response {
-    let Some(auth) = auth else {
-        return (
-            StatusCode::UNAUTHORIZED,
-            String::from("You must be signed in to create a form"),
-        )
-            .into_response();
-    };
-
-    let result = db
-        .collection::<Form>("forms")
-        .find(doc! {
-          "user_id": auth.id
-        })
-        .await;
-
-    match result {
-        Ok(mut data) => {
-            let mut forms: Vec<Form> = Vec::new();
-            while let Some(Ok(form)) = data.next().await {
-                forms.push(form);
-            }
-            (StatusCode::OK, Json(forms)).into_response()
-        }
-        Err(e) => {
-            tracing::error!(error = %e, "Error occurred while querying database");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
-}
