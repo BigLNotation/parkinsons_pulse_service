@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod caregiver;
 pub mod form;
 pub mod models;
 

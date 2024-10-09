@@ -4,28 +4,37 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use futures::{FutureExt, StreamExt, TryStreamExt};
+use futures::TryStreamExt;
 use mongodb::{
-    bson::{doc, oid::ObjectId, to_document},
+    bson::{doc, oid::ObjectId, to_document, DateTime},
     Database,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::app::{
     auth::{self, middleware::Auth},
     models::{
         dto::form::{CreateFormPayload, FindPath},
-        Event, Form, FormSubmitted, User,
+        Event, Form, FormSubmitted, Question, QuestionAndAnswer, User,
     },
 };
+#[derive(Serialize, Deserialize)]
+struct FormSubmittedWithForm {
+    pub id: Option<ObjectId>,
+    pub user_id: Option<ObjectId>,
+    pub title: String,
+    pub created_by: ObjectId,
+    pub created_at: DateTime,
+    pub questions: Vec<Question>,
+    pub answers: Vec<QuestionAndAnswer>,
+    pub submitted_at: DateTime,
+    pub submitted_by: ObjectId,
+}
 
 #[tracing::instrument]
 #[axum::debug_handler]
-pub async fn history(
-    State(db): State<Database>,
-    Auth(auth): Auth,
-    Path(path): Path<FindPath>,
-) -> Response {
+pub async fn history(State(db): State<Database>, Auth(auth): Auth) -> Response {
     let Some(auth) = auth else {
         return (
             StatusCode::UNAUTHORIZED,
@@ -50,12 +59,22 @@ pub async fn history(
                     .iter()
                     .map(|form| {
                         form.events.iter().filter_map(|event: &Event| match event {
-                            Event::FormSubmitted(form) => Some(form.clone()),
+                            Event::FormSubmitted(form_submitted) => Some(FormSubmittedWithForm {
+                                id: form.id,
+                                user_id: form.user_id,
+                                title: form.title.clone(),
+                                created_by: form.created_by,
+                                created_at: form.created_at,
+                                questions: form.questions.clone(),
+                                answers: form_submitted.answers.clone(),
+                                submitted_at: form_submitted.submitted_at,
+                                submitted_by: form_submitted.submitted_by,
+                            }),
                             _ => None,
                         })
                     })
                     .flatten()
-                    .collect::<Vec<FormSubmitted>>(),
+                    .collect::<Vec<FormSubmittedWithForm>>(),
             }),
         )
             .into_response(),
