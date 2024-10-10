@@ -1,6 +1,9 @@
 pub mod dto;
 
+use chrono::{Duration, Utc};
 use mongodb::bson::{oid::ObjectId, DateTime};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -276,4 +279,32 @@ pub struct MultichoiceQuestionOption {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CaregiverToken {
+    pub token: String,
+    pub user_id: ObjectId,
+    created_at: mongodb::bson::DateTime,
+    expired_by: mongodb::bson::DateTime,
+}
+fn generate_random_string(length: usize) -> String {
+    let rng = thread_rng();
+    rng.sample_iter(&Alphanumeric)
+        .take(length)
+        .map(char::from)
+        .collect::<String>()
+        .to_ascii_lowercase()
+}
+
+impl CaregiverToken {
+    pub fn new(user_id: ObjectId) -> CaregiverToken {
+        let expired_by = Utc::now() + Duration::days(3);
+        CaregiverToken {
+            token: generate_random_string(10),
+            expired_by: mongodb::bson::DateTime::from_millis(expired_by.timestamp_millis()),
+            user_id,
+            created_at: mongodb::bson::DateTime::now(),
+        }
+    }
 }

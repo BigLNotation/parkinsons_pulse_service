@@ -1,11 +1,12 @@
 pub mod auth;
+pub mod caregiver;
 pub mod form;
 pub mod models;
 
 use axum::extract::{Path, State};
 use axum::http::Method;
 use dotenvy::dotenv;
-use models::User;
+use models::{CaregiverToken, User};
 use mongodb::options::IndexOptions;
 use mongodb::IndexModel;
 use std::time::Duration;
@@ -89,6 +90,7 @@ pub async fn run() {
         .route("/", get(hello_world))
         .nest("/form", form::router())
         .nest("/auth", auth::router())
+        .nest("/caregiver", caregiver::router())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())
         .layer(
@@ -207,6 +209,16 @@ async fn create_unique_email_address_index(db: &Database) -> anyhow::Result<()> 
     let collection = db.collection::<User>("users");
     let index_model = IndexModel::builder()
         .keys(doc! { "email_address": 1 })
+        .options(IndexOptions::builder().unique(true).build())
+        .build();
+    collection.create_index(index_model).await?;
+    Ok(())
+}
+
+async fn create_unique_caregiver_token_index(db: &Database) -> anyhow::Result<()> {
+    let collection = db.collection::<CaregiverToken>("caregiver_tokens");
+    let index_model = IndexModel::builder()
+        .keys(doc! { "token": 1 })
         .options(IndexOptions::builder().unique(true).build())
         .build();
     collection.create_index(index_model).await?;
