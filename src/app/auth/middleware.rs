@@ -17,6 +17,7 @@ pub struct UserClaims {
     pub last_name: String,
     // national_health_identifer: String,
     pub email_address: String,
+    pub is_patient: bool,
 }
 
 impl TryInto<UserClaims> for User {
@@ -27,6 +28,7 @@ impl TryInto<UserClaims> for User {
             first_name: self.first_name,
             last_name: self.last_name,
             email_address: self.email_address,
+            is_patient: self.is_patient,
         })
     }
 }
