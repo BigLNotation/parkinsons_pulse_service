@@ -2,7 +2,7 @@ pub mod add;
 pub mod generate;
 
 use axum::{
-    routing::{get, post},
+    routing::post,
     Router,
 };
 

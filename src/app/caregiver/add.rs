@@ -2,22 +2,19 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use bson::DateTime;
-use chrono::Utc;
 use mongodb::{
-    bson::{doc, oid::ObjectId, to_document},
+    bson::doc,
     Collection, Database,
 };
-use serde_json::json;
 use tracing::info;
 
 use crate::app::{
-    auth::{self, middleware::Auth},
+    auth::{middleware::Auth},
     models::{
-        dto::{caregiver::CaregiverTokenPath, form::CreateFormPayload},
-        CaregiverToken, Form, User,
+        dto::caregiver::CaregiverTokenPath,
+        CaregiverToken, User,
     },
 };
 

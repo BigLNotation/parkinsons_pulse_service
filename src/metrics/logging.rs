@@ -1,18 +1,14 @@
-use opentelemetry::{global, trace::TracerProvider, Key, KeyValue};
+use opentelemetry::{global, trace::TracerProvider, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
-    metrics::{
-        reader::DefaultTemporalitySelector, Aggregation, Instrument, MeterProviderBuilder,
-        PeriodicReader, SdkMeterProvider, Stream,
-    },
     runtime,
-    trace::{BatchConfig, Config, RandomIdGenerator, Sampler, Tracer},
+    trace::{BatchConfig, Config},
     Resource,
 };
 use opentelemetry_semantic_conventions::{
     attribute::{SERVICE_NAME},
 };
-use tracing_opentelemetry::{MetricsLayer, OpenTelemetryLayer};
+use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
 use crate::config::get_optl_collecter_address;

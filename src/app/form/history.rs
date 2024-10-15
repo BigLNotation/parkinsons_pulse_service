@@ -1,22 +1,20 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{doc, oid::ObjectId, to_document, DateTime},
+    bson::{doc, oid::ObjectId, DateTime},
     Database,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use crate::app::{
-    auth::{self, middleware::Auth},
+    auth::{middleware::Auth},
     models::{
-        dto::form::{CreateFormPayload, FindPath},
-        Event, Form, FormSubmitted, Question, QuestionAndAnswer, User,
+        Event, Form, Question, QuestionAndAnswer,
     },
 };
 #[derive(Serialize, Deserialize)]
