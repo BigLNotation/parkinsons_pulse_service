@@ -33,7 +33,7 @@ pub async fn update_medication(
 
     let result = db.collection::<MedicationTrackerEntry>("medications")
 		.update_one(doc! {"_id": path.medication_id, "user_id": auth.id },
-					doc! { "medication_name": payload.medication_name, "dose": payload.dose, "timing": payload.timing } )
+					doc! { "$set": { "medication_name": payload.medication_name, "dose": payload.dose, "timing": payload.timing }} )
 					.await;
     match result {
         Ok(result) => {
