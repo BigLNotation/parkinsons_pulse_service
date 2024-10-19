@@ -4,16 +4,10 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use mongodb::{
-    bson::doc,
-    Database,
-};
+use mongodb::{bson::doc, Database};
 use serde_json::json;
 
-use crate::app::{
-    auth::{middleware::Auth},
-    models::CaregiverToken,
-};
+use crate::app::{auth::middleware::Auth, models::CaregiverToken};
 
 #[tracing::instrument]
 #[axum::debug_handler]

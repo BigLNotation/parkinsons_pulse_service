@@ -9,12 +9,12 @@ use mongodb::{bson::doc, Database};
 
 use crate::app::{
     auth::middleware::Auth,
-    models::{dto::form::FindPath, Form},
+    models::{dto::medication::FindPath, MedicationTrackerEntry},
 };
 
 #[tracing::instrument]
 #[axum::debug_handler]
-pub async fn find(
+pub async fn find_medication(
     State(db): State<Database>,
     Auth(auth): Auth,
     Path(path): Path<FindPath>,
@@ -22,15 +22,15 @@ pub async fn find(
     let Some(auth) = auth else {
         return (
             StatusCode::UNAUTHORIZED,
-            String::from("You must be signed in to create a form"),
+            String::from("You must be signed in to access medication tracker entries"),
         )
             .into_response();
     };
 
     let result = db
-        .collection::<Form>("forms")
+        .collection::<MedicationTrackerEntry>("medications")
         .find_one(doc! {
-          "_id": path.form_id,
+          "_id": path.medication_id,
           "user_id": auth.id
         })
         .await;
@@ -45,17 +45,17 @@ pub async fn find(
 
 #[tracing::instrument]
 #[axum::debug_handler]
-pub async fn find_all(State(db): State<Database>, Auth(auth): Auth) -> Response {
+pub async fn find_all_medications(State(db): State<Database>, Auth(auth): Auth) -> Response {
     let Some(auth) = auth else {
         return (
             StatusCode::UNAUTHORIZED,
-            String::from("You must be signed in to create a form"),
+            String::from("You must be signed in to access medication tracker entries"),
         )
             .into_response();
     };
 
     let result = db
-        .collection::<Form>("forms")
+        .collection::<MedicationTrackerEntry>("medications")
         .find(doc! {
           "user_id": auth.id
         })
@@ -63,11 +63,11 @@ pub async fn find_all(State(db): State<Database>, Auth(auth): Auth) -> Response 
 
     match result {
         Ok(mut data) => {
-            let mut forms: Vec<Form> = Vec::new();
-            while let Some(Ok(form)) = data.next().await {
-                forms.push(form);
+            let mut medications: Vec<MedicationTrackerEntry> = Vec::new();
+            while let Some(Ok(medication)) = data.next().await {
+                medications.push(medication);
             }
-            (StatusCode::OK, Json(forms)).into_response()
+            (StatusCode::OK, Json(medications)).into_response()
         }
         Err(e) => {
             tracing::error!(error = %e, "Error occurred while querying database");

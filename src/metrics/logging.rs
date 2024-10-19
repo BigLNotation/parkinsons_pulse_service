@@ -5,9 +5,7 @@ use opentelemetry_sdk::{
     trace::{BatchConfig, Config},
     Resource,
 };
-use opentelemetry_semantic_conventions::{
-    attribute::{SERVICE_NAME},
-};
+use opentelemetry_semantic_conventions::attribute::SERVICE_NAME;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
@@ -27,24 +25,20 @@ pub fn init() {
     let mut opentelemetry_layers = Vec::new();
     #[cfg(feature = "jaeger_tracing")]
     {
-        let optl_tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_trace_config(
-                Config::default().with_resource(Resource::new(vec![KeyValue::new(
-                    SERVICE_NAME,
-                    "parkinsons_pulse_service",
-                )])),
-            )
-            .with_exporter(
-                opentelemetry_otlp::new_exporter()
-                    .tonic()
-                    .with_endpoint(
-                        get_optl_collecter_address()
-                    ),
-            )
-            .with_batch_config(BatchConfig::default())
-            .install_batch(runtime::Tokio)
-            .expect("Failed to initialize tracer provider.");
+        let optl_tracer =
+            opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_trace_config(Config::default().with_resource(Resource::new(vec![
+                    KeyValue::new(SERVICE_NAME, "parkinsons_pulse_service"),
+                ])))
+                .with_exporter(
+                    opentelemetry_otlp::new_exporter()
+                        .tonic()
+                        .with_endpoint(get_optl_collecter_address()),
+                )
+                .with_batch_config(BatchConfig::default())
+                .install_batch(runtime::Tokio)
+                .expect("Failed to initialize tracer provider.");
 
         global::set_tracer_provider(optl_tracer.clone());
         let opentelemetry_layer = OpenTelemetryLayer::new(optl_tracer.tracer("otel-subscriber"));

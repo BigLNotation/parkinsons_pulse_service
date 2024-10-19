@@ -42,8 +42,7 @@ pub fn get_jwt_secret() -> String {
 }
 
 pub fn get_optl_collecter_address() -> String {
-    std::env::var("OPTL_COLLECTOR")
-    .unwrap_or("http://localhost:4317".to_string())
+    std::env::var("OPTL_COLLECTOR").unwrap_or("http://localhost:4317".to_string())
 }
 
 /// Get set api port

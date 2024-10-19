@@ -12,10 +12,8 @@ use mongodb::{
 use serde::{Deserialize, Serialize};
 
 use crate::app::{
-    auth::{middleware::Auth},
-    models::{
-        Event, Form, Question, QuestionAndAnswer,
-    },
+    auth::middleware::Auth,
+    models::{Event, Form, Question, QuestionAndAnswer},
 };
 #[derive(Serialize, Deserialize)]
 struct FormSubmittedWithForm {

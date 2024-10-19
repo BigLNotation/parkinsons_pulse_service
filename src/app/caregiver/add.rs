@@ -4,18 +4,12 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use bson::DateTime;
-use mongodb::{
-    bson::doc,
-    Collection, Database,
-};
+use mongodb::{bson::doc, Collection, Database};
 use tracing::info;
 
 use crate::app::{
-    auth::{middleware::Auth},
-    models::{
-        dto::caregiver::CaregiverTokenPath,
-        CaregiverToken, User,
-    },
+    auth::middleware::Auth,
+    models::{dto::caregiver::CaregiverTokenPath, CaregiverToken, User},
 };
 
 async fn delete_expired_tokens(

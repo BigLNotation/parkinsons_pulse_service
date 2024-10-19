@@ -1,10 +1,7 @@
 pub mod add;
 pub mod generate;
 
-use axum::{
-    routing::post,
-    Router,
-};
+use axum::{routing::post, Router};
 
 use super::AppState;
 
