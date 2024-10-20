@@ -168,6 +168,7 @@ pub async fn login(
     cookies.add(auth_cookie);
 
     (StatusCode::OK, Json(user_without_password)).into_response()
+
 }
 
 async fn logout(cookies: Cookies) -> Response {

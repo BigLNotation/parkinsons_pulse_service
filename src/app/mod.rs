@@ -55,9 +55,15 @@ impl AppState {
         create_unique_email_address_index(&db)
             .await
             .inspect_err(
-                |e| tracing::error!(error = %e, "Failed to create unique index on email address"),
+                |e| tracing::error!(error = %e, "Failed to create unique index on caregiver tokens"),
             )
-            .with_context(|| String::from("Failed to create unique index on email address"))?;
+            .with_context(|| String::from("Failed to create unique index on caregiver token"))?;
+        create_unique_caregiver_token_index(&db)
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to create unique index on caregiver token"),
+            )
+            .with_context(|| String::from("Failed to create unique index on caregiver token"))?;
         tracing::info!("Connected to database at {database_url}");
         Ok(AppState { db })
     }
