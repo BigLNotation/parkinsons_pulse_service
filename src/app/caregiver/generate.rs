@@ -17,6 +17,8 @@ use crate::app::{
     models::{dto::form::CreateFormPayload, CaregiverToken, Form, User},
 };
 
+use super::delete_expired_tokens;
+
 #[tracing::instrument]
 #[axum::debug_handler]
 pub async fn generate(State(db): State<Database>, Auth(auth): Auth) -> Response {
