@@ -31,7 +31,14 @@ pub async fn create_form(
     };
 
     let id = ObjectId::new();
-    let form = Form::from(id, payload.title, auth.id, auth.id, payload.questions);
+    let form = Form::from(
+        id,
+        payload.title,
+        payload.description,
+        auth.id,
+        auth.id,
+        payload.questions,
+    );
     let result = db.collection::<Form>("forms").insert_one(form).await;
     match result {
         Ok(..) => (StatusCode::OK, Json(json! ({ "created_id": id }))).into_response(),

@@ -5,6 +5,7 @@ pub mod models;
 
 use axum::extract::{Path, State};
 use axum::http::Method;
+use axum_extra::headers::Origin;
 use dotenvy::dotenv;
 use models::{CaregiverToken, User};
 use mongodb::options::IndexOptions;
@@ -12,7 +13,7 @@ use mongodb::IndexModel;
 use std::time::Duration;
 
 use anyhow::Context;
-use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{
     extract::{FromRef, MatchedPath},
     http::{Request, StatusCode},

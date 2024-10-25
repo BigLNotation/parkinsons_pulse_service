@@ -53,6 +53,7 @@ impl User {
 ///     user_id: Some(ObjectId::new()),
 ///     title: String::from("Tremors"),
 ///     created_by: ObjectId::new(),
+///     description: None,
 ///     created_at: DateTime::now(),
 ///     questions: vec![
 ///         Question::Multichoice(MultichoiceQuestion {
@@ -115,6 +116,7 @@ pub struct Form {
     pub user_id: Option<ObjectId>,
     /// Title of the form for clients
     pub title: String,
+    pub description: Option<String>,
     pub created_by: ObjectId,
     pub created_at: DateTime,
     /// List of questions in the form
@@ -128,6 +130,7 @@ impl Form {
     pub fn from(
         id: ObjectId,
         title: String,
+        description: Option<String>,
         created_by: ObjectId,
         user_id: ObjectId,
         mut questions: Vec<Question>,
@@ -152,6 +155,7 @@ impl Form {
         Self {
             id: Some(id),
             title,
+            description,
             created_by,
             user_id: Some(user_id),
             created_at: DateTime::now(),
@@ -202,7 +206,7 @@ pub enum Question {
 }
 
 /// ID of choice in the questions that is selected
-pub type MultichoiceAnswer = ObjectId;
+pub type MultichoiceAnswer = Vec<ObjectId>;
 /// Numerical value that the user selects
 pub type SliderAnswer = f64;
 /// String for the answer that the client types

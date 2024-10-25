@@ -25,7 +25,7 @@ pub async fn generate(State(db): State<Database>, Auth(auth): Auth) -> Response 
     let Some(auth) = auth else {
         return (
             StatusCode::UNAUTHORIZED,
-            String::from("You must be signed in to create a form"),
+            String::from("You must be signed in to generate a caregiver token"),
         )
             .into_response();
     };

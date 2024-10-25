@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -51,9 +53,8 @@ pub async fn history(State(db): State<Database>, Auth(auth): Auth) -> Response {
         .await;
 
     match result {
-        Ok(data) => (
-            StatusCode::OK,
-            Json(match data.try_collect::<Vec<Form>>().await {
+        Ok(data) => {
+            let mut res = match data.try_collect::<Vec<Form>>().await {
                 Err(..) => Vec::new(),
                 Ok(forms) => forms
                     .iter()
@@ -75,9 +76,17 @@ pub async fn history(State(db): State<Database>, Auth(auth): Auth) -> Response {
                     })
                     .flatten()
                     .collect::<Vec<FormSubmittedWithForm>>(),
-            }),
-        )
-            .into_response(),
+            };
+            res.sort_by(|a, b| {
+                if a.submitted_at.to_chrono().timestamp() > b.submitted_at.to_chrono().timestamp() {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            });
+            (StatusCode::OK, Json(res)).into_response()
+        }
+
         Err(e) => {
             tracing::error!(error = %e, "Error occurred while querying database");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
