@@ -1,12 +1,15 @@
 pub mod auth;
 pub mod caregiver;
+pub mod caregiver;
 pub mod form;
+pub mod medication;
 pub mod models;
 
 use axum::extract::{Path, State};
 use axum::http::Method;
 use axum_extra::headers::Origin;
 use dotenvy::dotenv;
+use models::{CaregiverToken, User};
 use models::{CaregiverToken, User};
 use mongodb::options::IndexOptions;
 use mongodb::IndexModel;
@@ -216,6 +219,16 @@ async fn create_unique_email_address_index(db: &Database) -> anyhow::Result<()> 
     let collection = db.collection::<User>("users");
     let index_model = IndexModel::builder()
         .keys(doc! { "email_address": 1 })
+        .options(IndexOptions::builder().unique(true).build())
+        .build();
+    collection.create_index(index_model).await?;
+    Ok(())
+}
+
+async fn create_unique_caregiver_token_index(db: &Database) -> anyhow::Result<()> {
+    let collection = db.collection::<CaregiverToken>("caregiver_tokens");
+    let index_model = IndexModel::builder()
+        .keys(doc! { "token": 1 })
         .options(IndexOptions::builder().unique(true).build())
         .build();
     collection.create_index(index_model).await?;

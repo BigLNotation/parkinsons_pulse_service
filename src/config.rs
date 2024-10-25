@@ -41,6 +41,10 @@ pub fn get_jwt_secret() -> String {
     std::env::var("JWT_SECRET").expect("JWT_SECRET environment variable must be set")
 }
 
+pub fn get_optl_collecter_address() -> String {
+    std::env::var("OPTL_COLLECTOR").unwrap_or("http://localhost:4317".to_string())
+}
+
 /// Get set api port
 ///
 /// Returns port set by env `API_PORT`. If it is unable to retrieve

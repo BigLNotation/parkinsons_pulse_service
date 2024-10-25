@@ -7,7 +7,7 @@ use mongodb::bson::oid::ObjectId;
 use tower_cookies::Cookies;
 use tracing::info;
 
-use crate::app::{auth::utils::decode_jwt, auth::LoginUserBody, models::User};
+use crate::app::{auth::utils::decode_jwt, models::User};
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct UserClaims {

@@ -1,6 +1,15 @@
-#[cfg(feature = "jaeger_tracing")]
-use opentelemetry::global;
+use opentelemetry::{global, trace::TracerProvider, KeyValue};
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::{
+    runtime,
+    trace::{BatchConfig, Config},
+    Resource,
+};
+use opentelemetry_semantic_conventions::attribute::SERVICE_NAME;
+use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+
+use crate::config::get_optl_collecter_address;
 
 /// Initializes tracing and logging for service
 ///
@@ -13,21 +22,27 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 ///
 pub fn init() {
     let mut layers = Vec::new();
-
+    let mut opentelemetry_layers = Vec::new();
     #[cfg(feature = "jaeger_tracing")]
     {
-        global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
+        let optl_tracer =
+            opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_trace_config(Config::default().with_resource(Resource::new(vec![
+                    KeyValue::new(SERVICE_NAME, "parkinsons_pulse_service"),
+                ])))
+                .with_exporter(
+                    opentelemetry_otlp::new_exporter()
+                        .tonic()
+                        .with_endpoint(get_optl_collecter_address()),
+                )
+                .with_batch_config(BatchConfig::default())
+                .install_batch(runtime::Tokio)
+                .expect("Failed to initialize tracer provider.");
 
-        let jaeger_tracer = opentelemetry_jaeger::new_pipeline()
-            .with_service_name(env!("CARGO_PKG_NAME"))
-            .install_simple()
-            .expect("Failed to generate Jaeger tracing pipeline");
-
-        let jaeger_layer = tracing_opentelemetry::layer()
-            .with_tracer(jaeger_tracer)
-            .boxed();
-
-        layers.push(jaeger_layer);
+        global::set_tracer_provider(optl_tracer.clone());
+        let opentelemetry_layer = OpenTelemetryLayer::new(optl_tracer.tracer("otel-subscriber"));
+        opentelemetry_layers.push(opentelemetry_layer);
     }
 
     #[cfg(feature = "local_log")]
@@ -44,6 +59,7 @@ pub fn init() {
 
     tracing_subscriber::registry()
         .with(layers)
+        .with(opentelemetry_layers)
         .try_init()
         .expect("Could not init tracing registry");
 
