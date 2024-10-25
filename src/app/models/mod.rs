@@ -308,3 +308,33 @@ impl CaregiverToken {
         }
     }
 }
+
+/// A medication tracking entry for a user, consisting of the medication name, dose, and timing.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MedicationTrackerEntry {
+    #[serde(rename = "_id")]
+    id: ObjectId,
+    pub user_id: ObjectId,
+    medication_name: String,
+    dose: String,
+    timing: String,
+}
+
+impl MedicationTrackerEntry {
+    #[must_use]
+    pub fn from(
+        id: ObjectId,
+        user_id: ObjectId,
+        medication_name: String,
+        dose: String,
+        timing: String,
+    ) -> Self {
+        Self {
+            id,
+            user_id,
+            medication_name,
+            dose,
+            timing,
+        }
+    }
+}

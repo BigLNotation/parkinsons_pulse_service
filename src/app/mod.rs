@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod caregiver;
 pub mod form;
+pub mod medication;
 pub mod models;
 
 use axum::extract::{Path, State};
@@ -91,6 +92,7 @@ pub async fn run() {
         .nest("/form", form::router())
         .nest("/auth", auth::router())
         .nest("/caregiver", caregiver::router())
+        .nest("/medication", medication::router())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())
         .layer(
