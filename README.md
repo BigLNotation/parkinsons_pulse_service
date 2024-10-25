@@ -1,23 +1,28 @@
 # Parkinson's Pulse Service
-The Backend service for parkinson's pulse
+The Backend service for Parkinson's Pulse, based on Rust and Axum and using a MongoDB database
+(For a full list of dependencies and their versions, refer to `Cargo.toml`)
 
 # Run locally
-For front end to run this locally you can do the following steps
+To run this locally, use the following steps:
 ```bash
 git clone https://github.com/BigLNotation/parkinsons_pulse_service.git
 cd parkinsons_pulse_service
 docker compose up -d
-docker run -d -p 4444:4444 .
+cp .env.example .env
+cargo run
 ```
-or something along these lines, you are smart you can do it :)
 
 ### Notes:
 This will not have any data in it unless you spec out a volume for the container. 
-To access the server the has now been started the url will be `localhost:4444/`. 
+To access the server that has now been started the url will be `localhost:4444/`. 
 
 # Configurations
 ## ENV
-- `API_PORT`, Specs the port that this app will serve on.
+(See `.env.example` for example values)
+- `API_PORT` specifies the port that this app will serve on.
+- `DATABASE_URL` specifies the URL (including port) for the MongoDB database.
+- `ORIGIN_DOMAIN` specifies the CORS allowed origin (i.e. in production it should be set to the URL of the frontend website).
+- `JWT_SECRET` specifies the secret used when generating and validating JWTs (used for authentication).
 
 # Tracing
 ## Jaeger
