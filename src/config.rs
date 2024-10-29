@@ -1,6 +1,9 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
+use axum::http::HeaderValue;
+
 const DEFAULT_APT_PORT: u16 = 4444;
+const DEFAULT_ENV: &str = "PRODUCTION";
 const DEFAULT_DATABASE_URL: &str = "mongodb://localhost:27017";
 
 /// Get set database url
@@ -9,6 +12,50 @@ pub fn get_database_url() -> String {
         tracing::warn!(DEFAULT_DATABASE_URL, error = %e,
                 "Unable to retrieve DATABASE_URL; falling back to default database url");
         DEFAULT_DATABASE_URL.to_string()
+    })
+}
+/// Get Domain for user
+///
+/// Returns domain set by env `DOMAIN` If it is unable to retrieve
+/// This is the domain that the server is running on
+///
+/// # Panics
+/// This function panics if DOMAIN is not set
+pub fn get_domain() -> String {
+    std::env::var("DOMAIN").expect("DOMAIN environment variable must be set")
+}
+/// Get Origin Domain for user
+///
+/// Returns origin domain set by env `ORIGIN_DOMAIN` If it is unable to retrieve
+/// This is the domain that the client is running on
+///
+/// # Panics
+/// This function panics if ORIGIN DOMAIN is not set
+pub fn get_origin_domain() -> HeaderValue {
+    std::env::var("ORIGIN_DOMAIN")
+        .expect("ORIGIN_DOMAIN environment variable must be set")
+        .parse::<HeaderValue>()
+        .unwrap()
+}
+
+pub fn get_jwt_secret() -> String {
+    std::env::var("JWT_SECRET").expect("JWT_SECRET environment variable must be set")
+}
+
+pub fn get_optl_collecter_address() -> String {
+    std::env::var("OPTL_COLLECTOR").unwrap_or("http://localhost:4317".to_string())
+}
+/// Get set is_production
+///
+/// Returns port set by env `ENV`. If it is unable to retrieve
+///
+/// # Panics
+/// This function panics if the `DEFAULT_ENV` is not a valid port.
+pub fn get_is_production() -> String {
+    std::env::var("ENV").unwrap_or_else(|e| {
+        tracing::warn!(DEFAULT_ENV, error = %e,
+                "Unable to retrieve ENV; falling back to default port");
+        DEFAULT_ENV.to_string()
     })
 }
 

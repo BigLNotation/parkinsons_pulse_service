@@ -1,22 +1,34 @@
+pub mod auth;
+pub mod caregiver;
+pub mod form;
+pub mod medication;
 pub mod models;
 
-use std::sync::Arc;
+use axum::extract::{Path, State};
+use axum::http::Method;
+use axum_extra::headers::Origin;
+use dotenvy::dotenv;
+use models::{CaregiverToken, User};
+use mongodb::options::IndexOptions;
+use mongodb::IndexModel;
 use std::time::Duration;
 
 use anyhow::Context;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{
-    extract::{FromRef, MatchedPath, Path, State},
-    http::Request,
-    routing::{get, put},
+    extract::{FromRef, MatchedPath},
+    http::{Request, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
     Json, Router,
 };
 use mongodb::{bson::doc, Client, Database};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::net::TcpListener;
+use tower_cookies::CookieManagerLayer;
 use tower_http::classify::ServerErrorsFailureClass;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::config;
@@ -42,6 +54,18 @@ impl AppState {
                 |e| tracing::error!(error = %e, "Failed to connect to database at {database_url}"),
             )
             .with_context(|| format!("Failed to connect to database at {database_url}"))?;
+        create_unique_email_address_index(&db)
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to create unique index on caregiver tokens"),
+            )
+            .with_context(|| String::from("Failed to create unique index on caregiver token"))?;
+        create_unique_caregiver_token_index(&db)
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to create unique index on caregiver token"),
+            )
+            .with_context(|| String::from("Failed to create unique index on caregiver token"))?;
         tracing::info!("Connected to database at {database_url}");
         Ok(AppState { db })
     }
@@ -61,6 +85,7 @@ impl FromRef<AppState> for Database {
 /// This panics upon failed to bind to port or if axum fails to serve app.
 ///
 pub async fn run() {
+    dotenv().ok();
     let app_state = AppState::new().await.unwrap_or_else(|e| {
         tracing::error!(error = %e, "Error occurred while creating app state");
         panic!("Error occurred while creating app state");
@@ -69,10 +94,21 @@ pub async fn run() {
 
     let app = Router::new()
         .route("/", get(hello_world))
-        .route("/read/:id", get(read_example))
-        .route("/write", put(write_example))
-        .route("/fail", get(failure))
+        .nest("/form", form::router())
+        .nest("/auth", auth::router())
+        .nest("/caregiver", caregiver::router())
+        .nest("/medication", medication::router())
         .with_state(app_state)
+        .layer(CookieManagerLayer::new())
+        .layer(
+          CorsLayer::new()
+            .allow_origin(
+              config::get_origin_domain(),
+            )
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::DELETE, Method::PATCH])
+            .allow_headers([CONTENT_TYPE, AUTHORIZATION])
+            .allow_credentials(true),
+        )
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
@@ -116,18 +152,8 @@ pub async fn run() {
 }
 
 #[tracing::instrument]
-async fn failure() -> impl IntoResponse {
-    // TODO: Remove example after first endpoint made
-    tracing::error!("I failed :(");
-
-    StatusCode::INTERNAL_SERVER_ERROR
-}
-
-#[tracing::instrument]
 async fn hello_world() -> impl IntoResponse {
-    // TODO: Remove example after first endpoint made
     tracing::info!("Hello world!");
-    foo();
 
     (StatusCode::OK, Json(json!({"message": "Hello World!"})))
 }
@@ -184,4 +210,24 @@ async fn write_example(
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+}
+
+async fn create_unique_email_address_index(db: &Database) -> anyhow::Result<()> {
+    let collection = db.collection::<User>("users");
+    let index_model = IndexModel::builder()
+        .keys(doc! { "email_address": 1 })
+        .options(IndexOptions::builder().unique(true).build())
+        .build();
+    collection.create_index(index_model).await?;
+    Ok(())
+}
+
+async fn create_unique_caregiver_token_index(db: &Database) -> anyhow::Result<()> {
+    let collection = db.collection::<CaregiverToken>("caregiver_tokens");
+    let index_model = IndexModel::builder()
+        .keys(doc! { "token": 1 })
+        .options(IndexOptions::builder().unique(true).build())
+        .build();
+    collection.create_index(index_model).await?;
+    Ok(())
 }

@@ -1,0 +1,25 @@
+@hostname=localhost
+@port=4444
+@address=http://{{hostname}}:{{port}}
+
+### Create a new `User`.
+# On success, returns {created_id: ObjectId}
+#
+# @prompt first_name First name of the user
+# @prompt last_name Last name of the user
+# @prompt national_health_identifier NHI number of the user
+# @prompt email_address Email address of the user
+# @prompt password The user's password
+# @prompt is_patient Whether the user is a patient (if true) or caregiver (if false)
+
+PUT {{address}}/user/create
+Content-Type: application/json
+
+{
+	"first_name": "{{first_name}}",
+	"last_name": "{{last_name}}",
+	"national_health_identifier": "{{national_health_identifier}}",
+	"email_address": "{{email_address}}",
+	"password": "{{password}}",
+	"is_patient": {{is_patient}}
+}
