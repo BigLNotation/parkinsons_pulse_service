@@ -86,12 +86,10 @@ impl FromRef<AppState> for Database {
 ///
 pub async fn run() {
     dotenv().ok();
-
     let app_state = AppState::new().await.unwrap_or_else(|e| {
         tracing::error!(error = %e, "Error occurred while creating app state");
         panic!("Error occurred while creating app state");
     });
-
     tracing::info!("App state initialized");
 
     let app = Router::new()

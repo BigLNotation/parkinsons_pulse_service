@@ -1,0 +1,69 @@
+name: Deploy to AWS
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-2
+
+concurrency: ci-${{ github.repository }}-docker-pipeline
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Config AWS creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve
+
+      - name: Get ECS Cluster and Service info
+        id: terraform_outputs
+        run: |
+          ECS_CLUSTER=$(terraform output -raw ecs_cluster_name)
+          ECS_SERVICE=$(terraform output -raw ecs_service_name)
+          echo "::set-output name=ecs_cluster::${ECS_CLUSTER}"
+          echo "::set-output name=ecs_service::${ECS_SERVICE}"
+
+      - name: Get ECR Repository Info
+        id: terraform_ecr_outputs
+        run: |
+          ECR_REPOSITORY=$(terraform output -raw ecr_repository_name)
+          ECR_REGISTRY=$(terraform output -raw ecr_registry_url)
+          echo "::set-output name=ecr_repository::${ECR_REPOSITORY}"
+          echo "::set-output name=ecr_registry::${ECR_REGISTRY}"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.terraform_ecr_outputs.outputs.ecr_registry }}
+          ECR_REPOSITORY: ${{ steps.terraform_ecr_outputs.outputs.ecr_repository }}
+        run: |
+          docker build -t $ECR_REGISTRY .
+          docker push $ECR_REGISTRY
+          echo "::set-output name=image::$ECR_REGISTRY"
+
+      - name: Terraform Apply with new ECR container
+        working-directory: ./terraform
+        run: terraform apply -auto-approve
