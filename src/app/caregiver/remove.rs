@@ -39,6 +39,8 @@ pub async fn remove_caregiver(
             .into_response();
     };
 
+    
+
     match db
         .collection::<User>("users")
         .find_one_and_update(

@@ -99,6 +99,7 @@ pub async fn run() {
         .nest("/form", form::router())
         .nest("/auth", auth::router())
         .nest("/caregiver", caregiver::router())
+        .nest("/medication", medication::router())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())
         .layer(
