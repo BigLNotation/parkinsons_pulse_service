@@ -19,4 +19,5 @@ COPY --from=build /app/app /usr/local/bin/
 
 HEALTHCHECK --start-period=10s --interval=10s --timeout=3s CMD ["bash", "./healthcheck.sh"]
 
+EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/app"]

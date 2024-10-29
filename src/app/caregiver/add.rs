@@ -21,25 +21,7 @@ use crate::app::{
     },
 };
 
-async fn delete_expired_tokens(
-    collection: &Collection<CaregiverToken>,
-) -> mongodb::error::Result<()> {
-    let now = DateTime::now();
-
-    let filter = doc! {
-      "expired_by": {
-        "$lt": now
-      }
-    };
-
-    let delete_result = collection.delete_many(filter).await?;
-    info!(
-        "Deleted {} expired caregiver tokens",
-        delete_result.deleted_count
-    );
-
-    Ok(())
-}
+use super::delete_expired_tokens;
 
 #[tracing::instrument]
 #[axum::debug_handler]

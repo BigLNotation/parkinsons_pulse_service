@@ -1,5 +1,6 @@
 mod create;
 mod find;
+mod history;
 mod submit;
 
 use axum::{
@@ -7,7 +8,8 @@ use axum::{
     Router,
 };
 use create::create_form;
-use find::{find, find_all};
+use find::{find, find_all, symptom_list};
+use history::history;
 use submit::submit;
 
 use super::AppState;
@@ -17,5 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/create", post(create_form))
         .route("/find/:form_id", get(find))
         .route("/find", get(find_all))
+        .route("/symptoms", get(symptom_list))
         .route("/submit/:form_id", post(submit))
+        .route("/history", get(history))
 }

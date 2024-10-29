@@ -53,6 +53,7 @@ impl User {
 ///     user_id: Some(ObjectId::new()),
 ///     title: String::from("Tremors"),
 ///     created_by: ObjectId::new(),
+///     description: None,
 ///     created_at: DateTime::now(),
 ///     questions: vec![
 ///         Question::Multichoice(MultichoiceQuestion {
@@ -115,6 +116,7 @@ pub struct Form {
     pub user_id: Option<ObjectId>,
     /// Title of the form for clients
     pub title: String,
+    pub description: Option<String>,
     pub created_by: ObjectId,
     pub created_at: DateTime,
     /// List of questions in the form
@@ -128,6 +130,7 @@ impl Form {
     pub fn from(
         id: ObjectId,
         title: String,
+        description: Option<String>,
         created_by: ObjectId,
         user_id: ObjectId,
         mut questions: Vec<Question>,
@@ -140,12 +143,7 @@ impl Form {
                         option.id = Some(ObjectId::new());
                     }
                 }
-                Question::MultichoiceSlider(ref mut question) => {
-                    question.id = Some(ObjectId::new());
-                    for option in &mut question.options {
-                        option.id = Some(ObjectId::new());
-                    }
-                }
+
                 Question::Slider(ref mut question) => {
                     question.id = Some(ObjectId::new());
                 }
@@ -157,6 +155,7 @@ impl Form {
         Self {
             id: Some(id),
             title,
+            description,
             created_by,
             user_id: Some(user_id),
             created_at: DateTime::now(),
@@ -200,9 +199,6 @@ pub struct FormSubmitted {
 pub enum Question {
     /// This is a list of multiple choices for a question
     Multichoice(MultichoiceQuestion),
-    /// This is a multichoice slider with options
-    /// such as Very Bad, Bad, Okay, Good, Very Good
-    MultichoiceSlider(MultichoiceSliderQuestion),
     /// This is a numeric slider
     Slider(SliderQuestion),
     /// This is for free form questions where the client may type whatever
@@ -210,9 +206,7 @@ pub enum Question {
 }
 
 /// ID of choice in the questions that is selected
-pub type MultichoiceAnswer = ObjectId;
-/// ID of choice in the questions that is selected
-pub type MultichoiceSliderAnswer = ObjectId;
+pub type MultichoiceAnswer = Vec<ObjectId>;
 /// Numerical value that the user selects
 pub type SliderAnswer = f64;
 /// String for the answer that the client types
@@ -222,7 +216,6 @@ pub type FreeFormAnswer = String;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum QuestionAndAnswer {
     Multichoice(ObjectId, MultichoiceAnswer),
-    MultichoiceSlider(ObjectId, MultichoiceSliderAnswer),
     Slider(ObjectId, SliderAnswer),
     FreeForm(ObjectId, FreeFormAnswer),
 }
@@ -246,22 +239,9 @@ pub struct SliderQuestion {
     pub low: f64,
     pub high: f64,
     pub step: f64,
-}
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct MultichoiceSliderQuestion {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub title: String,
-    pub options: Vec<MultichoiceSliderQuestionOption>,
-    pub min_selected: u64,
-    pub max_selected: u64,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct MultichoiceSliderQuestionOption {
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
+    pub highest_message: Option<String>,
+    pub middle_message: Option<String>,
+    pub lowest_message: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -305,6 +285,36 @@ impl CaregiverToken {
             expired_by: mongodb::bson::DateTime::from_millis(expired_by.timestamp_millis()),
             user_id,
             created_at: mongodb::bson::DateTime::now(),
+        }
+    }
+}
+
+/// A medication tracking entry for a user, consisting of the medication name, dose, and timing.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MedicationTrackerEntry {
+    #[serde(rename = "_id")]
+    id: ObjectId,
+    pub user_id: ObjectId,
+    medication_name: String,
+    dose: String,
+    timing: String,
+}
+
+impl MedicationTrackerEntry {
+    #[must_use]
+    pub fn from(
+        id: ObjectId,
+        user_id: ObjectId,
+        medication_name: String,
+        dose: String,
+        timing: String,
+    ) -> Self {
+        Self {
+            id,
+            user_id,
+            medication_name,
+            dose,
+            timing,
         }
     }
 }

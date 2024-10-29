@@ -167,7 +167,8 @@ pub async fn login(
     info!("{:#?}", auth_cookie);
     cookies.add(auth_cookie);
 
-    StatusCode::OK.into_response()
+    (StatusCode::OK, Json(user_without_password)).into_response()
+
 }
 
 async fn logout(cookies: Cookies) -> Response {

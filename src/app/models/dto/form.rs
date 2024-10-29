@@ -7,6 +7,7 @@ use crate::app::models::{Question, QuestionAndAnswer};
 pub struct CreateFormPayload {
     // TODO!: get user id from request header instead once we can do that - don't let people mess with each other's forms
     pub title: String,
+    pub description: Option<String>,
     pub questions: Vec<Question>,
 }
 

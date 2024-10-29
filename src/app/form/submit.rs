@@ -12,8 +12,8 @@ use mongodb::{
 use crate::app::{
     auth::middleware::Auth,
     models::{
-        dto::form::{CreateFormPayload, SubmitPath, SubmitPayload},
-        Form, User,
+        dto::form::{SubmitPath, SubmitPayload},
+        Form,
     },
 };
 
@@ -46,10 +46,13 @@ pub async fn submit(
             return StatusCode::BAD_REQUEST.into_response();
         }
     };
+
+    tracing::info!("answers_document = {:#?}", answers_document);
+
     let result = db
         .collection::<Form>("forms")
         .update_one(
-            doc! { "user_id": auth.id, "_id": path.form_id },
+            doc! { "_id": path.form_id },
             doc! { "$push": { "events": { "FormSubmitted": {
                 "answers": answers_document,
                 "submitted_by": auth.id,
@@ -60,6 +63,7 @@ pub async fn submit(
     match result {
         Ok(result) => {
             if result.modified_count == 0 {
+                tracing::error!("No update to the database {:#?}", result);
                 return StatusCode::BAD_REQUEST.into_response();
             }
             StatusCode::OK.into_response()

@@ -1,10 +1,12 @@
 pub mod auth;
 pub mod caregiver;
 pub mod form;
+pub mod medication;
 pub mod models;
 
 use axum::extract::{Path, State};
 use axum::http::Method;
+use axum_extra::headers::Origin;
 use dotenvy::dotenv;
 use models::{CaregiverToken, User};
 use mongodb::options::IndexOptions;
@@ -12,7 +14,7 @@ use mongodb::IndexModel;
 use std::time::Duration;
 
 use anyhow::Context;
-use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{
     extract::{FromRef, MatchedPath},
     http::{Request, StatusCode},
@@ -55,9 +57,15 @@ impl AppState {
         create_unique_email_address_index(&db)
             .await
             .inspect_err(
-                |e| tracing::error!(error = %e, "Failed to create unique index on email address"),
+                |e| tracing::error!(error = %e, "Failed to create unique index on caregiver tokens"),
             )
-            .with_context(|| String::from("Failed to create unique index on email address"))?;
+            .with_context(|| String::from("Failed to create unique index on caregiver token"))?;
+        create_unique_caregiver_token_index(&db)
+            .await
+            .inspect_err(
+                |e| tracing::error!(error = %e, "Failed to create unique index on caregiver token"),
+            )
+            .with_context(|| String::from("Failed to create unique index on caregiver token"))?;
         tracing::info!("Connected to database at {database_url}");
         Ok(AppState { db })
     }
@@ -91,6 +99,7 @@ pub async fn run() {
         .nest("/form", form::router())
         .nest("/auth", auth::router())
         .nest("/caregiver", caregiver::router())
+        .nest("/medication", medication::router())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())
         .layer(
